@@ -48,23 +48,6 @@ class AppViewModel: ObservableObject {
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
-
-        // Observe settings changes to update frame rate/delay synchronization
-        settings.$frameRate
-            .dropFirst()
-            .removeDuplicates()
-            .sink { [weak self] _ in
-                self?.settings.updateDelayFromFrameRate()
-            }
-            .store(in: &cancellables)
-
-        settings.$frameDelay
-            .dropFirst()
-            .removeDuplicates()
-            .sink { [weak self] _ in
-                self?.settings.updateFrameRateFromDelay()
-            }
-            .store(in: &cancellables)
     }
 
     func addImages(from urls: [URL]) {

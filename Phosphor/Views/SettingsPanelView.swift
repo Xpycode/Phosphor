@@ -41,11 +41,18 @@ struct SettingsPanelView: View {
                                 }
 
                                 Slider(
-                                    value: $viewModel.settings.frameRate,
+                                    value: Binding(
+                                        get: { viewModel.settings.frameRate },
+                                        set: { newFPS in
+                                            viewModel.settings.frameRate = newFPS
+                                            // Calculate and update delay: delay (ms) = 1000 / fps
+                                            viewModel.settings.frameDelay = 1000.0 / newFPS
+                                        }
+                                    ),
                                     in: 1...60,
                                     step: 0.1
                                 )
-                                .controlSize(.regular)
+                                .tint(.accentColor)
                             }
 
                             // Frame Delay
@@ -60,11 +67,18 @@ struct SettingsPanelView: View {
                                 }
 
                                 Slider(
-                                    value: $viewModel.settings.frameDelay,
+                                    value: Binding(
+                                        get: { viewModel.settings.frameDelay },
+                                        set: { newDelay in
+                                            viewModel.settings.frameDelay = newDelay
+                                            // Calculate and update FPS: fps = 1000 / delay (ms)
+                                            viewModel.settings.frameRate = 1000.0 / newDelay
+                                        }
+                                    ),
                                     in: 16...5000,
                                     step: 1
                                 )
-                                .controlSize(.regular)
+                                .tint(.accentColor)
                             }
                         }
                         .padding(12)
