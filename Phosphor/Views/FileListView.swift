@@ -77,11 +77,23 @@ struct FileListView: View {
             if viewModel.imageItems.isEmpty {
                 emptyStateView
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(Array(viewModel.sortedImages.enumerated()), id: \.element.id) { index, item in
+                if viewModel.settings.sortOrder == .manual {
+                    // Manual sorting with drag-and-drop
+                    List {
+                        ForEach(Array(viewModel.imageItems.enumerated()), id: \.element.id) { index, item in
                             FileItemRow(item: item, index: index, viewModel: viewModel)
-                                .contentShape(Rectangle())
+                        }
+                        .onMove(perform: viewModel.moveItems)
+                    }
+                    .listStyle(.plain)
+                } else {
+                    // Automatic sorting (no drag-and-drop)
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(viewModel.sortedImages.enumerated()), id: \.element.id) { index, item in
+                                FileItemRow(item: item, index: index, viewModel: viewModel)
+                                    .contentShape(Rectangle())
+                            }
                         }
                     }
                 }

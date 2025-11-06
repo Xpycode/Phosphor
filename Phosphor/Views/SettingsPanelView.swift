@@ -45,7 +45,7 @@ struct SettingsPanelView: View {
                                     in: 1...60,
                                     step: 0.1
                                 )
-                                .labelsHidden()
+                                .controlSize(.regular)
                             }
 
                             // Frame Delay
@@ -64,7 +64,7 @@ struct SettingsPanelView: View {
                                     in: 16...5000,
                                     step: 1
                                 )
-                                .labelsHidden()
+                                .controlSize(.regular)
                             }
                         }
                         .padding(12)
@@ -125,7 +125,7 @@ struct SettingsPanelView: View {
                                     in: 0.1...1.0,
                                     step: 0.05
                                 )
-                                .labelsHidden()
+                                .controlSize(.regular)
                             }
 
                             // Dithering Toggle
