@@ -23,7 +23,50 @@ struct FileListView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .padding()
+            .padding(.horizontal)
+            .padding(.top)
+            .padding(.bottom, 8)
+
+            // Sort Order Buttons
+            HStack(spacing: 4) {
+                Text("Sort:")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button(action: { viewModel.settings.sortOrder = .fileName }) {
+                    Label("Name", systemImage: "textformat.abc")
+                        .font(.caption)
+                        .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .tint(viewModel.settings.sortOrder == .fileName ? .accentColor : .secondary)
+                .help("Sort by file name")
+
+                Button(action: { viewModel.settings.sortOrder = .modificationDate }) {
+                    Label("Date", systemImage: "calendar")
+                        .font(.caption)
+                        .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .tint(viewModel.settings.sortOrder == .modificationDate ? .accentColor : .secondary)
+                .help("Sort by modification date")
+
+                Button(action: { viewModel.settings.sortOrder = .manual }) {
+                    Label("Manual", systemImage: "hand.point.up.left")
+                        .font(.caption)
+                        .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .tint(viewModel.settings.sortOrder == .manual ? .accentColor : .secondary)
+                .help("Manual order")
+
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 8)
 
             Divider()
 

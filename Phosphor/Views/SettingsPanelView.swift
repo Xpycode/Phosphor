@@ -75,25 +75,30 @@ struct SettingsPanelView: View {
                                 Text("Loop Count")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+
                                 Spacer()
-                                Text(viewModel.settings.loopCount == 0 ? "Infinite" : "\(viewModel.settings.loopCount)")
-                                    .font(.caption.monospacedDigit())
+
+                                Toggle("Infinite", isOn: Binding(
+                                    get: { viewModel.settings.loopCount == 0 },
+                                    set: { viewModel.settings.loopCount = $0 ? 0 : 1 }
+                                ))
+                                .toggleStyle(.switch)
+                                .controlSize(.small)
                             }
 
-                            HStack {
-                                Button("Infinite") {
-                                    viewModel.settings.loopCount = 0
-                                }
-                                .buttonStyle(.borderless)
+                            if viewModel.settings.loopCount != 0 {
+                                HStack {
+                                    Text("Repeats:")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
 
-                                Slider(
-                                    value: Binding(
-                                        get: { Double(viewModel.settings.loopCount) },
-                                        set: { viewModel.settings.loopCount = Int($0) }
-                                    ),
-                                    in: 0...100,
-                                    step: 1
-                                )
+                                    TextField("", value: $viewModel.settings.loopCount, format: .number)
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 60)
+
+                                    Stepper("", value: $viewModel.settings.loopCount, in: 1...100)
+                                        .labelsHidden()
+                                }
                             }
                         }
                         .padding(8)
@@ -125,18 +130,6 @@ struct SettingsPanelView: View {
                                 .font(.caption)
                                 .help("Dithering helps reduce color banding in GIFs")
                         }
-                        .padding(8)
-                    }
-
-                    // Sort Order
-                    GroupBox("Sort Order") {
-                        Picker("", selection: $viewModel.settings.sortOrder) {
-                            ForEach(SortOrder.allCases, id: \.self) { order in
-                                Text(order.rawValue).tag(order)
-                            }
-                        }
-                        .pickerStyle(.radioGroup)
-                        .font(.caption)
                         .padding(8)
                     }
 
