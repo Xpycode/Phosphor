@@ -81,7 +81,10 @@ struct FileListView: View {
                     // Manual sorting with drag-and-drop
                     List {
                         ForEach(Array(viewModel.imageItems.enumerated()), id: \.element.id) { index, item in
-                            FileItemRow(item: item, index: index, viewModel: viewModel)
+                            FileItemRow(item: item, index: index, viewModel: viewModel, isManualMode: true)
+                                .listRowInsets(EdgeInsets())
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
                         }
                         .onMove(perform: viewModel.moveItems)
                     }
@@ -91,7 +94,7 @@ struct FileListView: View {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             ForEach(Array(viewModel.sortedImages.enumerated()), id: \.element.id) { index, item in
-                                FileItemRow(item: item, index: index, viewModel: viewModel)
+                                FileItemRow(item: item, index: index, viewModel: viewModel, isManualMode: false)
                                     .contentShape(Rectangle())
                             }
                         }
@@ -191,9 +194,18 @@ struct FileItemRow: View {
     let item: ImageItem
     let index: Int
     @ObservedObject var viewModel: AppViewModel
+    var isManualMode: Bool = false
 
     var body: some View {
         HStack(spacing: 12) {
+            // Drag handle indicator (manual mode only)
+            if isManualMode {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 16)
+            }
+
             // Thumbnail
             if let thumbnail = item.thumbnail {
                 Image(nsImage: thumbnail)
