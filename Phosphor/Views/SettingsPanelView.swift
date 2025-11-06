@@ -28,9 +28,9 @@ struct SettingsPanelView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     // Timing Settings
                     GroupBox("Timing") {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 16) {
                             // Frame Rate
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 6) {
                                 HStack {
                                     Text("Frame Rate")
                                         .font(.caption)
@@ -45,10 +45,11 @@ struct SettingsPanelView: View {
                                     in: 1...60,
                                     step: 0.1
                                 )
+                                .labelsHidden()
                             }
 
                             // Frame Delay
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 6) {
                                 HStack {
                                     Text("Frame Delay")
                                         .font(.caption)
@@ -63,9 +64,10 @@ struct SettingsPanelView: View {
                                     in: 16...5000,
                                     step: 1
                                 )
+                                .labelsHidden()
                             }
                         }
-                        .padding(8)
+                        .padding(12)
                     }
 
                     // Loop Settings
@@ -108,7 +110,7 @@ struct SettingsPanelView: View {
                     GroupBox("Quality") {
                         VStack(alignment: .leading, spacing: 12) {
                             // Quality Slider
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 6) {
                                 HStack {
                                     Text("Quality")
                                         .font(.caption)
@@ -123,6 +125,7 @@ struct SettingsPanelView: View {
                                     in: 0.1...1.0,
                                     step: 0.05
                                 )
+                                .labelsHidden()
                             }
 
                             // Dithering Toggle
@@ -130,7 +133,7 @@ struct SettingsPanelView: View {
                                 .font(.caption)
                                 .help("Dithering helps reduce color banding in GIFs")
                         }
-                        .padding(8)
+                        .padding(12)
                     }
 
                     // Export Format

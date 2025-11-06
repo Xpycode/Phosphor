@@ -34,33 +34,36 @@ struct FileListView: View {
                     .foregroundStyle(.secondary)
 
                 Button(action: { viewModel.settings.sortOrder = .fileName }) {
-                    Label("Name", systemImage: "textformat.abc")
+                    Image(systemName: "textformat.abc")
                         .font(.caption)
-                        .labelStyle(.iconOnly)
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(viewModel.settings.sortOrder == .fileName ? .white : .primary)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .tint(viewModel.settings.sortOrder == .fileName ? .accentColor : .secondary)
+                .buttonStyle(.borderless)
+                .background(viewModel.settings.sortOrder == .fileName ? Color.accentColor : Color.clear)
+                .cornerRadius(4)
                 .help("Sort by file name")
 
                 Button(action: { viewModel.settings.sortOrder = .modificationDate }) {
-                    Label("Date", systemImage: "calendar")
+                    Image(systemName: "calendar")
                         .font(.caption)
-                        .labelStyle(.iconOnly)
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(viewModel.settings.sortOrder == .modificationDate ? .white : .primary)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .tint(viewModel.settings.sortOrder == .modificationDate ? .accentColor : .secondary)
+                .buttonStyle(.borderless)
+                .background(viewModel.settings.sortOrder == .modificationDate ? Color.accentColor : Color.clear)
+                .cornerRadius(4)
                 .help("Sort by modification date")
 
                 Button(action: { viewModel.settings.sortOrder = .manual }) {
-                    Label("Manual", systemImage: "hand.point.up.left")
+                    Image(systemName: "hand.point.up.left")
                         .font(.caption)
-                        .labelStyle(.iconOnly)
+                        .frame(width: 24, height: 24)
+                        .foregroundColor(viewModel.settings.sortOrder == .manual ? .white : .primary)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .tint(viewModel.settings.sortOrder == .manual ? .accentColor : .secondary)
+                .buttonStyle(.borderless)
+                .background(viewModel.settings.sortOrder == .manual ? Color.accentColor : Color.clear)
+                .cornerRadius(4)
                 .help("Manual order")
 
                 Spacer()
