@@ -112,7 +112,7 @@ struct FileListView: View {
 
         for provider in providers {
             if provider.canLoadObject(ofClass: URL.self) {
-                provider.loadObject(ofClass: URL.self) { url, error in
+                _ = provider.loadObject(ofClass: URL.self) { url, error in
                     if let url = url {
                         DispatchQueue.main.async {
                             urls.append(url)

@@ -36,6 +36,8 @@ class ExportSettings: ObservableObject {
     @Published var enableDithering: Bool = true
     @Published var sortOrder: SortOrder = .fileName
 
+    private var isUpdating = false
+
     // Computed property to sync frame rate with delay
     var computedFrameDelay: Double {
         get {
@@ -53,14 +55,20 @@ class ExportSettings: ObservableObject {
     }
 
     func updateFrameRateFromDelay() {
+        guard !isUpdating else { return }
+        isUpdating = true
         if frameDelay > 0 {
             frameRate = 1000.0 / frameDelay
         }
+        isUpdating = false
     }
 
     func updateDelayFromFrameRate() {
+        guard !isUpdating else { return }
+        isUpdating = true
         if frameRate > 0 {
             frameDelay = 1000.0 / frameRate
         }
+        isUpdating = false
     }
 }

@@ -45,6 +45,7 @@ class AppViewModel: ObservableObject {
         // Observe settings changes to update frame rate/delay synchronization
         settings.$frameRate
             .dropFirst()
+            .removeDuplicates()
             .sink { [weak self] _ in
                 self?.settings.updateDelayFromFrameRate()
             }
@@ -52,6 +53,7 @@ class AppViewModel: ObservableObject {
 
         settings.$frameDelay
             .dropFirst()
+            .removeDuplicates()
             .sink { [weak self] _ in
                 self?.settings.updateFrameRateFromDelay()
             }
