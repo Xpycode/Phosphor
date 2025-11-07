@@ -53,8 +53,12 @@ struct SettingsPanelView: View {
                                 }
                                 .tint(.accentColor)
                                 .labelsHidden()
-                                .onChange(of: viewModel.settings.frameRate) { newFPS in
-                                    viewModel.settings.frameDelay = 1000.0 / newFPS
+                                .onChange(of: viewModel.settings.frameRate) { oldValue, newValue in
+                                    let calculatedDelay = 1000.0 / newValue
+                                    // Only update if significantly different to prevent circular updates
+                                    if abs(viewModel.settings.frameDelay - calculatedDelay) > 0.5 {
+                                        viewModel.settings.frameDelay = calculatedDelay
+                                    }
                                 }
                             }
 
@@ -82,8 +86,12 @@ struct SettingsPanelView: View {
                                 }
                                 .tint(.accentColor)
                                 .labelsHidden()
-                                .onChange(of: viewModel.settings.frameDelay) { newDelay in
-                                    viewModel.settings.frameRate = 1000.0 / newDelay
+                                .onChange(of: viewModel.settings.frameDelay) { oldValue, newValue in
+                                    let calculatedFPS = 1000.0 / newValue
+                                    // Only update if significantly different to prevent circular updates
+                                    if abs(viewModel.settings.frameRate - calculatedFPS) > 0.5 {
+                                        viewModel.settings.frameRate = calculatedFPS
+                                    }
                                 }
                             }
                         }

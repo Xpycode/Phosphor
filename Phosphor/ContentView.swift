@@ -3,7 +3,7 @@
 //  Phosphor
 //
 //  Created on 2025-11-06
-//  Last modified: 2025-11-07 09:45 UTC - Fixed performance with onChange approach
+//  Last modified: 2025-11-07 10:00 UTC - Fixed circular updates with tolerance check
 //
 
 import SwiftUI
