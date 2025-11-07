@@ -29,22 +29,19 @@ struct SettingsPanelView: View {
                     // Timing Settings
                     GroupBox("Timing") {
                         VStack(alignment: .leading, spacing: 16) {
-                            // Frame Rate (computed from frame delay)
+                            // Frame Rate
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack {
                                     Text("Frame Rate")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Spacer()
-                                    Text("\(Int(1000.0 / viewModel.settings.frameDelay)) FPS")
+                                    Text("\(Int(viewModel.settings.frameRate)) FPS")
                                         .font(.caption.monospacedDigit())
                                 }
 
                                 Slider(
-                                    value: Binding(
-                                        get: { 1000.0 / viewModel.settings.frameDelay },
-                                        set: { newFPS in viewModel.settings.frameDelay = 1000.0 / newFPS }
-                                    ),
+                                    value: $viewModel.settings.frameRate,
                                     in: 1...60,
                                     step: 1
                                 ) {
