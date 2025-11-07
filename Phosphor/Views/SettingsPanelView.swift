@@ -41,10 +41,7 @@ struct SettingsPanelView: View {
                                 }
 
                                 Slider(
-                                    value: Binding(
-                                        get: { viewModel.settings.frameRate },
-                                        set: { viewModel.settings.frameRate = $0 }
-                                    ),
+                                    value: $viewModel.settings.frameRate,
                                     in: 1...60,
                                     step: 1
                                 ) {
@@ -56,6 +53,9 @@ struct SettingsPanelView: View {
                                 }
                                 .tint(.accentColor)
                                 .labelsHidden()
+                                .onChange(of: viewModel.settings.frameRate) { newFPS in
+                                    viewModel.settings.frameDelay = 1000.0 / newFPS
+                                }
                             }
 
                             // Frame Delay
@@ -82,6 +82,9 @@ struct SettingsPanelView: View {
                                 }
                                 .tint(.accentColor)
                                 .labelsHidden()
+                                .onChange(of: viewModel.settings.frameDelay) { newDelay in
+                                    viewModel.settings.frameRate = 1000.0 / newDelay
+                                }
                             }
                         }
                         .padding(12)

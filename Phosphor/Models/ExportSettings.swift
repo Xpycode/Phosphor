@@ -34,16 +34,7 @@ class ExportSettings: ObservableObject {
     @Published var enableDithering: Bool = true
     @Published var sortOrder: SortOrder = .fileName
 
-    // Single source of truth - frameDelay in milliseconds
-    @Published var frameDelay: Double = 100
-
-    // Computed property - frameRate in FPS (calculated from frameDelay: fps = 1000 / delay)
-    var frameRate: Double {
-        get {
-            1000.0 / frameDelay
-        }
-        set {
-            frameDelay = 1000.0 / newValue
-        }
-    }
+    // Both properties stored independently - synchronized via onChange in the view
+    @Published var frameRate: Double = 10 // FPS (1-60)
+    @Published var frameDelay: Double = 100 // milliseconds (16-5000)
 }
