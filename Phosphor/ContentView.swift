@@ -3,6 +3,7 @@
 //  Phosphor
 //
 //  Created on 2025-11-06
+//  Last modified: 2025-11-07 14:30 UTC - Performance fix for slider initialization
 //
 
 import SwiftUI

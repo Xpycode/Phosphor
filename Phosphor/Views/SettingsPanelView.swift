@@ -41,7 +41,10 @@ struct SettingsPanelView: View {
                                 }
 
                                 Slider(
-                                    value: $viewModel.settings.frameRate,
+                                    value: Binding(
+                                        get: { viewModel.settings.frameRate },
+                                        set: { viewModel.settings.frameRate = $0 }
+                                    ),
                                     in: 1...60,
                                     step: 1
                                 ) {

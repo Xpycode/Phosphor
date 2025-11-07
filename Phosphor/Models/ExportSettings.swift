@@ -34,25 +34,16 @@ class ExportSettings: ObservableObject {
     @Published var enableDithering: Bool = true
     @Published var sortOrder: SortOrder = .fileName
 
-    // Primary property - frameDelay in milliseconds
-    @Published var frameDelay: Double = 100 {
-        didSet {
-            guard !isUpdating else { return }
-            isUpdating = true
-            frameRate = 1000.0 / frameDelay
-            isUpdating = false
+    // Single source of truth - frameDelay in milliseconds
+    @Published var frameDelay: Double = 100
+
+    // Computed property - frameRate in FPS (calculated from frameDelay: fps = 1000 / delay)
+    var frameRate: Double {
+        get {
+            1000.0 / frameDelay
+        }
+        set {
+            frameDelay = 1000.0 / newValue
         }
     }
-
-    // Secondary property - frameRate in FPS (synchronized with frameDelay)
-    @Published var frameRate: Double = 10 {
-        didSet {
-            guard !isUpdating else { return }
-            isUpdating = true
-            frameDelay = 1000.0 / frameRate
-            isUpdating = false
-        }
-    }
-
-    private var isUpdating = false
 }
