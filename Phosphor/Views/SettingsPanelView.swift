@@ -36,7 +36,7 @@ struct SettingsPanelView: View {
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Spacer()
-                                    Text("\(String(format: "%.1f", viewModel.settings.frameRate)) FPS")
+                                    Text("\(Int(viewModel.settings.frameRate)) FPS")
                                         .font(.caption.monospacedDigit())
                                 }
 
@@ -50,9 +50,16 @@ struct SettingsPanelView: View {
                                         }
                                     ),
                                     in: 1...60,
-                                    step: 0.1
-                                )
+                                    step: 1
+                                ) {
+                                    // Empty label - required for SwiftUI but not shown
+                                } minimumValueLabel: {
+                                    EmptyView()
+                                } maximumValueLabel: {
+                                    EmptyView()
+                                }
                                 .tint(.accentColor)
+                                .labelsHidden()
                             }
 
                             // Frame Delay
@@ -62,7 +69,7 @@ struct SettingsPanelView: View {
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Spacer()
-                                    Text("\(String(format: "%.0f", viewModel.settings.frameDelay)) ms")
+                                    Text("\(Int(viewModel.settings.frameDelay)) ms")
                                         .font(.caption.monospacedDigit())
                                 }
 
@@ -77,8 +84,15 @@ struct SettingsPanelView: View {
                                     ),
                                     in: 16...5000,
                                     step: 1
-                                )
+                                ) {
+                                    // Empty label - required for SwiftUI but not shown
+                                } minimumValueLabel: {
+                                    EmptyView()
+                                } maximumValueLabel: {
+                                    EmptyView()
+                                }
                                 .tint(.accentColor)
+                                .labelsHidden()
                             }
                         }
                         .padding(12)
