@@ -29,19 +29,22 @@ struct SettingsPanelView: View {
                     // Timing Settings
                     GroupBox("Timing") {
                         VStack(alignment: .leading, spacing: 16) {
-                            // Frame Rate
+                            // Frame Rate (computed from frame delay)
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack {
                                     Text("Frame Rate")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Spacer()
-                                    Text("\(Int(viewModel.settings.frameRate)) FPS")
+                                    Text("\(Int(1000.0 / viewModel.settings.frameDelay)) FPS")
                                         .font(.caption.monospacedDigit())
                                 }
 
                                 Slider(
-                                    value: $viewModel.settings.frameRate,
+                                    value: Binding(
+                                        get: { 1000.0 / viewModel.settings.frameDelay },
+                                        set: { newFPS in viewModel.settings.frameDelay = 1000.0 / newFPS }
+                                    ),
                                     in: 1...60,
                                     step: 1
                                 ) {
@@ -53,13 +56,6 @@ struct SettingsPanelView: View {
                                 }
                                 .tint(.accentColor)
                                 .labelsHidden()
-                                .onChange(of: viewModel.settings.frameRate) { oldValue, newValue in
-                                    let calculatedDelay = 1000.0 / newValue
-                                    // Only update if significantly different to prevent circular updates
-                                    if abs(viewModel.settings.frameDelay - calculatedDelay) > 0.5 {
-                                        viewModel.settings.frameDelay = calculatedDelay
-                                    }
-                                }
                             }
 
                             // Frame Delay
@@ -86,13 +82,6 @@ struct SettingsPanelView: View {
                                 }
                                 .tint(.accentColor)
                                 .labelsHidden()
-                                .onChange(of: viewModel.settings.frameDelay) { oldValue, newValue in
-                                    let calculatedFPS = 1000.0 / newValue
-                                    // Only update if significantly different to prevent circular updates
-                                    if abs(viewModel.settings.frameRate - calculatedFPS) > 0.5 {
-                                        viewModel.settings.frameRate = calculatedFPS
-                                    }
-                                }
                             }
                         }
                         .padding(12)

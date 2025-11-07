@@ -3,7 +3,7 @@
 //  Phosphor
 //
 //  Created on 2025-11-06
-//  Last modified: 2025-11-07 10:00 UTC - Fixed circular updates with tolerance check
+//  Last modified: 2025-11-07 10:15 UTC - Simplified to single source of truth
 //
 
 import SwiftUI
