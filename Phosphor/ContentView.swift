@@ -3,7 +3,7 @@
 //  Phosphor
 //
 //  Created on 2025-11-06
-//  Last modified: 2025-11-07 10:30 UTC - Used computed properties with backing storage
+//  Last modified: 2025-11-07 10:45 UTC - Fixed Bindings for computed properties
 //
 
 import SwiftUI

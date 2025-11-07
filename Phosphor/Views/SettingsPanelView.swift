@@ -41,7 +41,10 @@ struct SettingsPanelView: View {
                                 }
 
                                 Slider(
-                                    value: $viewModel.settings.frameRate,
+                                    value: Binding(
+                                        get: { viewModel.settings.frameRate },
+                                        set: { viewModel.settings.frameRate = $0 }
+                                    ),
                                     in: 1...60,
                                     step: 1
                                 ) {
@@ -67,7 +70,10 @@ struct SettingsPanelView: View {
                                 }
 
                                 Slider(
-                                    value: $viewModel.settings.frameDelay,
+                                    value: Binding(
+                                        get: { viewModel.settings.frameDelay },
+                                        set: { viewModel.settings.frameDelay = $0 }
+                                    ),
                                     in: 16...5000,
                                     step: 1
                                 ) {
