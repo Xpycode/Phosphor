@@ -44,9 +44,12 @@ struct SettingsPanelView: View {
                                     value: Binding(
                                         get: { viewModel.settings.frameRate },
                                         set: { newFPS in
+                                            guard !viewModel.settings.isUpdating else { return }
+                                            viewModel.settings.isUpdating = true
                                             viewModel.settings.frameRate = newFPS
                                             // Calculate and update delay: delay (ms) = 1000 / fps
                                             viewModel.settings.frameDelay = 1000.0 / newFPS
+                                            viewModel.settings.isUpdating = false
                                         }
                                     ),
                                     in: 1...60,
@@ -77,9 +80,12 @@ struct SettingsPanelView: View {
                                     value: Binding(
                                         get: { viewModel.settings.frameDelay },
                                         set: { newDelay in
+                                            guard !viewModel.settings.isUpdating else { return }
+                                            viewModel.settings.isUpdating = true
                                             viewModel.settings.frameDelay = newDelay
                                             // Calculate and update FPS: fps = 1000 / delay (ms)
                                             viewModel.settings.frameRate = 1000.0 / newDelay
+                                            viewModel.settings.isUpdating = false
                                         }
                                     ),
                                     in: 16...5000,

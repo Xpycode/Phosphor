@@ -35,4 +35,7 @@ class ExportSettings: ObservableObject {
     @Published var quality: Double = 0.8 // 0.0 to 1.0
     @Published var enableDithering: Bool = true
     @Published var sortOrder: SortOrder = .fileName
+
+    // Flag to prevent circular updates during synchronization
+    var isUpdating = false
 }
