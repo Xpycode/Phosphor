@@ -261,8 +261,21 @@ struct FileItemRow: View {
         .padding(.vertical, 8)
         .background(viewModel.currentFrameIndex == index ? Color.accentColor.opacity(0.1) : Color.clear)
         .contentShape(Rectangle())
-        .onTapGesture {
-            viewModel.seekToFrame(index)
+        .if(!isManualMode) { view in
+            view.onTapGesture {
+                viewModel.seekToFrame(index)
+            }
+        }
+    }
+}
+
+// MARK: - View Extension for Conditional Modifiers
+extension View {
+    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
         }
     }
 }
