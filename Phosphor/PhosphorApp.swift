@@ -9,6 +9,8 @@ import SwiftUI
 
 @main
 struct PhosphorApp: App {
+    @AppStorage("prefersLightMode") private var prefersLightMode = false
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -16,6 +18,21 @@ struct PhosphorApp: App {
         .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(after: .sidebar) {
+                Button("Select Dark Mode") {
+                    prefersLightMode = false
+                }
+                .keyboardShortcut("d", modifiers: [.command, .shift])
+                .disabled(!prefersLightMode)
+
+                Button("Select Light Mode") {
+                    prefersLightMode = true
+                }
+                .keyboardShortcut("l", modifiers: [.command, .shift])
+                .disabled(prefersLightMode)
+
+                Divider()
+            }
         }
     }
 }

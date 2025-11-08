@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = AppViewModel()
+    @AppStorage("prefersLightMode") private var prefersLightMode = false
 
     var body: some View {
         HSplitView {
@@ -25,6 +26,7 @@ struct ContentView: View {
                 .frame(minWidth: 280, idealWidth: 320, maxWidth: 400)
         }
         .frame(minWidth: 1000, minHeight: 600)
+        .preferredColorScheme(prefersLightMode ? .light : .dark)
     }
 }
 
