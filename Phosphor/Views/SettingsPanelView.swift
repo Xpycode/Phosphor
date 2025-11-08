@@ -36,14 +36,17 @@ struct SettingsPanelView: View {
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Spacer()
-                                    Text("\(String(format: "%.1f", viewModel.settings.frameRate)) FPS")
+                                    Text("\(Int(viewModel.settings.frameRate)) FPS")
                                         .font(.caption.monospacedDigit())
                                 }
 
                                 Slider(
-                                    value: $viewModel.settings.frameRate,
-                                    in: 1...60,
-                                    step: 0.1
+                                    value: steppedBinding(
+                                        $viewModel.settings.frameRate,
+                                        step: 1.0,
+                                        range: 1.0...60.0
+                                    ),
+                                    in: 1.0...60.0
                                 )
                                 .controlSize(.regular)
                             }
@@ -55,14 +58,17 @@ struct SettingsPanelView: View {
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Spacer()
-                                    Text("\(String(format: "%.0f", viewModel.settings.frameDelay)) ms")
+                                    Text("\(String(format: "%.0f", viewModel.settings.frameDelay)) ms / \(String(format: "%.1f", viewModel.settings.frameDelay / 10.0)) cs")
                                         .font(.caption.monospacedDigit())
                                 }
 
                                 Slider(
-                                    value: $viewModel.settings.frameDelay,
-                                    in: 16...5000,
-                                    step: 1
+                                    value: steppedBinding(
+                                        $viewModel.settings.frameDelay,
+                                        step: 1,
+                                        range: (1000.0 / 60.0)...1000.0
+                                    ),
+                                    in: (1000.0 / 60.0)...1000.0
                                 )
                                 .controlSize(.regular)
                             }
@@ -121,9 +127,12 @@ struct SettingsPanelView: View {
                                 }
 
                                 Slider(
-                                    value: $viewModel.settings.quality,
-                                    in: 0.1...1.0,
-                                    step: 0.05
+                                    value: steppedBinding(
+                                        $viewModel.settings.quality,
+                                        step: 0.05,
+                                        range: 0.1...1.0
+                                    ),
+                                    in: 0.1...1.0
                                 )
                                 .controlSize(.regular)
                             }
@@ -174,6 +183,20 @@ struct SettingsPanelView: View {
             .padding()
         }
         .background(Color(NSColor.controlBackgroundColor))
+    }
+
+    private func steppedBinding(
+        _ binding: Binding<Double>,
+        step: Double,
+        range: ClosedRange<Double>
+    ) -> Binding<Double> {
+        Binding(
+            get: { binding.wrappedValue },
+            set: { newValue in
+                let snappedValue = (newValue / step).rounded() * step
+                binding.wrappedValue = min(max(snappedValue, range.lowerBound), range.upperBound)
+            }
+        )
     }
 
     private func exportAnimation() {

@@ -37,6 +37,7 @@ class ExportSettings: ObservableObject {
     @Published var sortOrder: SortOrder = .fileName
 
     private var isUpdating = false
+    private let frameRateRange: ClosedRange<Double> = 1...60
 
     // Computed property to sync frame rate with delay
     var computedFrameDelay: Double {
@@ -56,19 +57,29 @@ class ExportSettings: ObservableObject {
 
     func updateFrameRateFromDelay() {
         guard !isUpdating else { return }
+        guard frameDelay > 0 else { return }
+
         isUpdating = true
-        if frameDelay > 0 {
-            frameRate = 1000.0 / frameDelay
-        }
-        isUpdating = false
+        defer { isUpdating = false }
+
+        let snappedRate = snapFrameRate(1000.0 / frameDelay)
+        frameRate = snappedRate
+        frameDelay = 1000.0 / snappedRate
     }
 
     func updateDelayFromFrameRate() {
         guard !isUpdating else { return }
+        guard frameRate > 0 else { return }
+
         isUpdating = true
-        if frameRate > 0 {
-            frameDelay = 1000.0 / frameRate
-        }
-        isUpdating = false
+        defer { isUpdating = false }
+
+        let snappedRate = snapFrameRate(frameRate)
+        frameRate = snappedRate
+        frameDelay = 1000.0 / snappedRate
+    }
+
+    private func snapFrameRate(_ value: Double) -> Double {
+        min(max(value.rounded(), frameRateRange.lowerBound), frameRateRange.upperBound)
     }
 }
