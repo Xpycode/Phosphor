@@ -132,7 +132,7 @@ struct FileListView: View {
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.allowedContentTypes = [.image]
+        panel.allowedContentTypes = ImageItem.supportedContentTypes
 
         if panel.runModal() == .OK {
             viewModel.addImages(from: panel.urls)
