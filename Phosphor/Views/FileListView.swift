@@ -15,88 +15,59 @@ struct FileListView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
+            ZStack {
                 Text("Images")
                     .font(.headline)
-                Spacer()
-                Text("\(viewModel.sortedImages.count) items")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                HStack {
+                    Spacer()
+                    Text("\(viewModel.sortedImages.count) items")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(.horizontal)
-            .padding(.top)
-            .padding(.bottom, 8)
-
-            // Sort Order Buttons
-            HStack(spacing: 4) {
-                Text("Sort:")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Button(action: { viewModel.settings.sortOrder = .fileName }) {
-                    Image(systemName: "textformat.abc")
-                        .font(.caption)
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(viewModel.settings.sortOrder == .fileName ? .white : .primary)
-                }
-                .buttonStyle(.borderless)
-                .background(viewModel.settings.sortOrder == .fileName ? Color.accentColor : Color.clear)
-                .cornerRadius(4)
-                .help("Sort by file name")
-
-                Button(action: { viewModel.settings.sortOrder = .modificationDate }) {
-                    Image(systemName: "calendar")
-                        .font(.caption)
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(viewModel.settings.sortOrder == .modificationDate ? .white : .primary)
-                }
-                .buttonStyle(.borderless)
-                .background(viewModel.settings.sortOrder == .modificationDate ? Color.accentColor : Color.clear)
-                .cornerRadius(4)
-                .help("Sort by modification date")
-
-                Button(action: { viewModel.settings.sortOrder = .manual }) {
-                    Image(systemName: "hand.point.up.left")
-                        .font(.caption)
-                        .frame(width: 24, height: 24)
-                        .foregroundColor(viewModel.settings.sortOrder == .manual ? .white : .primary)
-                }
-                .buttonStyle(.borderless)
-                .background(viewModel.settings.sortOrder == .manual ? Color.accentColor : Color.clear)
-                .cornerRadius(4)
-                .help("Manual order")
-
-                Spacer()
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 8)
+            .frame(height: 44)
 
             Divider()
+
+            // Sort Order Picker
+            HStack(spacing: 8) {
+                Text("Sort")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Picker("", selection: $viewModel.settings.sortOrder) {
+                    Text("File Name").tag(SortOrder.fileName)
+                    Text("Modified").tag(SortOrder.modificationDate)
+                    Text("Manual").tag(SortOrder.manual)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+            .padding(.bottom, 6)
 
             // File List
             if viewModel.imageItems.isEmpty {
                 emptyStateView
+            } else if viewModel.settings.sortOrder == .manual {
+                manualReorderList
             } else {
-                if viewModel.settings.sortOrder == .manual {
-                    // Manual sorting with drag-and-drop
-                    List {
-                        ForEach(Array(viewModel.imageItems.enumerated()), id: \.element.id) { index, item in
-                            FileItemRow(item: item, index: index, viewModel: viewModel, isManualMode: true)
-                                .listRowInsets(EdgeInsets())
-                                .listRowSeparator(.hidden)
-                                .listRowBackground(Color.clear)
-                        }
-                        .onMove(perform: viewModel.moveItems)
-                    }
-                    .listStyle(.plain)
-                } else {
-                    // Automatic sorting (no drag-and-drop)
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(Array(viewModel.sortedImages.enumerated()), id: \.element.id) { index, item in
-                                FileItemRow(item: item, index: index, viewModel: viewModel, isManualMode: false)
-                                    .contentShape(Rectangle())
-                            }
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(viewModel.sortedImages.enumerated()), id: \.element.id) { index, item in
+                            FileItemRow(
+                                item: item,
+                                index: index,
+                                viewModel: viewModel,
+                                isManualMode: false
+                            )
+                            .contentShape(Rectangle())
                         }
                     }
                 }
@@ -190,33 +161,67 @@ struct FileListView: View {
     }
 }
 
+private struct ClearListBackgroundModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 13.0, *) {
+            content.scrollContentBackground(.hidden)
+        } else {
+            content
+        }
+    }
+}
+
+private extension FileListView {
+    var manualReorderList: some View {
+        List {
+            ForEach(Array(viewModel.imageItems.enumerated()), id: \.element.id) { index, item in
+                FileItemRow(
+                    item: item,
+                    index: index,
+                    viewModel: viewModel,
+                    isManualMode: true
+                )
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            }
+            .onMove(perform: viewModel.moveItems)
+        }
+        .listStyle(.plain)
+        .modifier(ClearListBackgroundModifier())
+        .padding(.horizontal, -8)
+    }
+}
+
 struct FileItemRow: View {
     let item: ImageItem
     let index: Int
     @ObservedObject var viewModel: AppViewModel
     var isManualMode: Bool = false
+    private let rowHeight: CGFloat = 72
 
     var body: some View {
         HStack(spacing: 12) {
-            // Drag handle indicator (manual mode only)
-            if isManualMode {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
-                    .frame(width: 16)
-            }
+            // Frame Number / Drag Handle (in manual mode)
+            Text("#\(index + 1)")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(isManualMode ? .primary : .secondary)
+                .frame(width: 28, alignment: .leading)
+                .contentShape(Rectangle())
+                .opacity(isManualMode ? 1.0 : 0.6)
 
             // Thumbnail
             if let thumbnail = item.thumbnail {
                 Image(nsImage: thumbnail)
                     .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 60, height: 60)
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: rowHeight, height: rowHeight)
+                    .clipped()
                     .cornerRadius(4)
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
-                    .frame(width: 60, height: 60)
+                    .frame(width: rowHeight, height: rowHeight)
                     .cornerRadius(4)
             }
 
@@ -238,15 +243,6 @@ struct FileItemRow: View {
 
             Spacer()
 
-            // Frame Number
-            Text("#\(index + 1)")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.tertiary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Color.gray.opacity(0.2))
-                .cornerRadius(4)
-
             // Remove Button
             Button(action: {
                 viewModel.removeImage(item)
@@ -258,13 +254,12 @@ struct FileItemRow: View {
             .help("Remove image")
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.vertical, 6)
+        .frame(minHeight: rowHeight)
         .background(viewModel.currentFrameIndex == index ? Color.accentColor.opacity(0.1) : Color.clear)
         .contentShape(Rectangle())
-        .if(!isManualMode) { view in
-            view.onTapGesture {
-                viewModel.seekToFrame(index)
-            }
+        .onTapGesture {
+            viewModel.seekToFrame(index)
         }
     }
 }

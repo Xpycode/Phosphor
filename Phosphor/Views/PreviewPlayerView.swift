@@ -13,17 +13,22 @@ struct PreviewPlayerView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
+            ZStack {
                 Text("Preview")
                     .font(.headline)
-                Spacer()
-                if viewModel.totalFrames > 0 {
-                    Text("Frame \(viewModel.currentFrameIndex + 1) of \(viewModel.totalFrames)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                HStack {
+                    Spacer()
+                    if viewModel.totalFrames > 0 {
+                        Text("Frame \(viewModel.currentFrameIndex + 1) of \(viewModel.totalFrames)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
-            .padding()
+            .padding(.horizontal)
+            .frame(height: 44)
 
             Divider()
 

@@ -15,7 +15,7 @@ struct ContentView: View {
         HSplitView {
             // Left Pane: File List
             FileListView(viewModel: viewModel)
-                .frame(minWidth: 250, idealWidth: 300, maxWidth: 400)
+                .frame(minWidth: 320, idealWidth: 360, maxWidth: 420)
 
             // Center Pane: Preview Player
             PreviewPlayerView(viewModel: viewModel)
