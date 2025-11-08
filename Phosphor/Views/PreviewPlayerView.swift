@@ -62,7 +62,7 @@ struct PreviewPlayerView: View {
             // Controls
             VStack(spacing: 12) {
                 // Scrubber
-                if viewModel.totalFrames > 0 {
+                if viewModel.totalFrames > 1 {
                     HStack(spacing: 8) {
                         Text("\(viewModel.currentFrameIndex + 1)")
                             .font(.caption.monospacedDigit())
@@ -77,12 +77,19 @@ struct PreviewPlayerView: View {
                             in: 0...Double(max(0, viewModel.totalFrames - 1)),
                             step: 1
                         )
-                        .disabled(viewModel.totalFrames <= 1)
 
                         Text("\(viewModel.totalFrames)")
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                             .frame(width: 30, alignment: .leading)
+                    }
+                } else if viewModel.totalFrames == 1 {
+                    HStack {
+                        Spacer()
+                        Text("Single frame loaded")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
                     }
                 }
 

@@ -29,11 +29,30 @@ struct ImageItem: Identifiable, Equatable {
         "\(Int(resolution.width)) × \(Int(resolution.height))"
     }
 
+    static let supportedContentTypes: [UTType] = {
+        var types: [UTType] = [.jpeg, .png, .gif, .tiff, .bmp]
+
+        if #available(macOS 11.0, *) {
+            types.append(contentsOf: [.heic, .heif])
+        }
+
+        if let webp = UTType("org.webmproject.webp") {
+            types.append(webp)
+        }
+
+        if let tga = UTType("com.truevision.tga-image") {
+            types.append(tga)
+        }
+
+        return types
+    }()
+
     static func == (lhs: ImageItem, rhs: ImageItem) -> Bool {
         lhs.id == rhs.id
     }
 
     static func from(url: URL) -> ImageItem? {
+        guard isSupported(url: url) else { return nil }
         guard let image = NSImage(contentsOf: url) else { return nil }
 
         // Get file attributes
@@ -75,5 +94,19 @@ extension NSImage {
 
         newImage.unlockFocus()
         return newImage
+    }
+}
+
+extension ImageItem {
+    static func isSupported(url: URL) -> Bool {
+        guard let type = UTType(filenameExtension: url.pathExtension.lowercased()) else {
+            return false
+        }
+
+        if type.conforms(to: .rawImage) {
+            return false
+        }
+
+        return supportedContentTypes.contains { type.conforms(to: $0) }
     }
 }
