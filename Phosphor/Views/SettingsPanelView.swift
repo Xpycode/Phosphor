@@ -14,12 +14,11 @@ struct SettingsPanelView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
-                Text("Settings")
-                    .font(.headline)
-                Spacer()
-            }
-            .padding()
+            Text("Settings")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal)
+                .frame(height: 44)
 
             Divider()
 
