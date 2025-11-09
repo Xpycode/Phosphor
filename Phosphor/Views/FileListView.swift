@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 struct FileListView: View {
     @ObservedObject var viewModel: AppViewModel
     @State private var isTargeted = false
+    @State private var draggingItem: ImageItem?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -173,23 +174,31 @@ private struct ClearListBackgroundModifier: ViewModifier {
 
 private extension FileListView {
     var manualReorderList: some View {
-        List {
-            ForEach(Array(viewModel.imageItems.enumerated()), id: \.element.id) { index, item in
-                FileItemRow(
-                    item: item,
-                    index: index,
-                    viewModel: viewModel,
-                    isManualMode: true
-                )
-                .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(Array(viewModel.imageItems.enumerated()), id: \.element.id) { index, item in
+                    FileItemRow(
+                        item: item,
+                        index: index,
+                        viewModel: viewModel,
+                        isManualMode: true
+                    )
+                    .contentShape(Rectangle())
+                    .onDrag {
+                        draggingItem = item
+                        return NSItemProvider(object: NSString(string: item.id.uuidString))
+                    }
+                    .onDrop(
+                        of: [.text],
+                        delegate: ManualDropDelegate(
+                            viewModel: viewModel,
+                            targetItem: item,
+                            draggingItem: $draggingItem
+                        )
+                    )
+                }
             }
-            .onMove(perform: viewModel.moveItems)
         }
-        .listStyle(.plain)
-        .modifier(ClearListBackgroundModifier())
-        .padding(.horizontal, -8)
     }
 }
 
@@ -200,8 +209,17 @@ struct FileItemRow: View {
     var isManualMode: Bool = false
     private let rowHeight: CGFloat = 72
 
+    private var thumbnailWidth: CGFloat {
+        let height = item.resolution.height
+        guard height > 0 else { return rowHeight }
+        let ratio = item.resolution.width / height
+        let width = rowHeight * CGFloat(ratio)
+        // Prevent extreme panoramas from taking over the row
+        return min(max(width, rowHeight * 0.6), rowHeight * 3)
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             // Frame Number / Drag Handle (in manual mode)
             Text("#\(index + 1)")
                 .font(.system(size: 11, weight: .semibold))
@@ -215,13 +233,13 @@ struct FileItemRow: View {
                 Image(nsImage: thumbnail)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: rowHeight, height: rowHeight)
+                    .frame(width: thumbnailWidth, height: rowHeight)
                     .clipped()
                     .cornerRadius(4)
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
-                    .frame(width: rowHeight, height: rowHeight)
+                    .frame(width: thumbnailWidth, height: rowHeight)
                     .cornerRadius(4)
             }
 
@@ -253,7 +271,7 @@ struct FileItemRow: View {
             .buttonStyle(.plain)
             .help("Remove image")
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 6)
         .padding(.vertical, 6)
         .frame(minHeight: rowHeight)
         .background(viewModel.currentFrameIndex == index ? Color.accentColor.opacity(0.1) : Color.clear)
@@ -272,6 +290,35 @@ extension View {
         } else {
             self
         }
+    }
+}
+
+private struct ManualDropDelegate: DropDelegate {
+    let viewModel: AppViewModel
+    let targetItem: ImageItem
+    @Binding var draggingItem: ImageItem?
+
+    func dropEntered(info: DropInfo) {
+        guard
+            let draggingItem,
+            draggingItem != targetItem,
+            let fromIndex = viewModel.imageItems.firstIndex(of: draggingItem),
+            let toIndex = viewModel.imageItems.firstIndex(of: targetItem)
+        else { return }
+
+        viewModel.moveItems(
+            from: IndexSet(integer: fromIndex),
+            to: toIndex > fromIndex ? toIndex + 1 : toIndex
+        )
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggingItem = nil
+        return true
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
     }
 }
 
