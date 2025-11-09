@@ -20,6 +20,7 @@ class AppViewModel: ObservableObject {
 
     private var playbackTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
+    private var lastAutomaticSortOrder: SortOrder = .fileName
 
     var sortedImages: [ImageItem] {
         switch settings.sortOrder {
@@ -47,7 +48,9 @@ class AppViewModel: ObservableObject {
             .dropFirst()
             .removeDuplicates()
             .sink { [weak self] _ in
-                self?.settings.updateDelayFromFrameRate()
+                DispatchQueue.main.async {
+                    self?.settings.updateDelayFromFrameRate()
+                }
             }
             .store(in: &cancellables)
 
@@ -55,7 +58,21 @@ class AppViewModel: ObservableObject {
             .dropFirst()
             .removeDuplicates()
             .sink { [weak self] _ in
-                self?.settings.updateFrameRateFromDelay()
+                DispatchQueue.main.async {
+                    self?.settings.updateFrameRateFromDelay()
+                }
+            }
+            .store(in: &cancellables)
+
+        settings.$sortOrder
+            .dropFirst()
+            .sink { [weak self] newOrder in
+                guard let self = self else { return }
+                if newOrder == .manual {
+                    self.applyAutomaticSort(order: self.lastAutomaticSortOrder)
+                } else {
+                    self.lastAutomaticSortOrder = newOrder
+                }
             }
             .store(in: &cancellables)
     }
@@ -179,6 +196,17 @@ class AppViewModel: ObservableObject {
                     }
                 }
             )
+        }
+    }
+
+    private func applyAutomaticSort(order: SortOrder) {
+        switch order {
+        case .fileName:
+            imageItems.sort { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
+        case .modificationDate:
+            imageItems.sort { $0.modificationDate < $1.modificationDate }
+        case .manual:
+            break
         }
     }
 }

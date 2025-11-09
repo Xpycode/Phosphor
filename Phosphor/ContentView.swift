@@ -15,7 +15,7 @@ struct ContentView: View {
         HSplitView {
             // Left Pane: File List
             FileListView(viewModel: viewModel)
-                .frame(minWidth: 320, idealWidth: 360, maxWidth: 420)
+                .frame(minWidth: 380, idealWidth: 410, maxWidth: 440)
 
             // Center Pane: Preview Player
             PreviewPlayerView(viewModel: viewModel)
@@ -25,7 +25,7 @@ struct ContentView: View {
             SettingsPanelView(viewModel: viewModel)
                 .frame(minWidth: 280, idealWidth: 320, maxWidth: 400)
         }
-        .frame(minWidth: 1000, minHeight: 600)
+        .frame(minWidth: 1000, minHeight: 630)
         .preferredColorScheme(prefersLightMode ? .light : .dark)
     }
 }
