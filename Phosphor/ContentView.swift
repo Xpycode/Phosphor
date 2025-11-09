@@ -12,18 +12,22 @@ struct ContentView: View {
     @AppStorage("prefersLightMode") private var prefersLightMode = false
 
     var body: some View {
-        HSplitView {
-            // Left Pane: File List
-            FileListView(viewModel: viewModel)
-                .frame(minWidth: 380, idealWidth: 410, maxWidth: 440)
+        VStack(spacing: 0) {
+            Divider()
 
-            // Center Pane: Preview Player
-            PreviewPlayerView(viewModel: viewModel)
-                .frame(minWidth: 400, idealWidth: 600)
+            HSplitView {
+                // Left Pane: File List
+                FileListView(viewModel: viewModel)
+                    .frame(minWidth: 380, idealWidth: 410, maxWidth: 440)
 
-            // Right Pane: Settings and Export
-            SettingsPanelView(viewModel: viewModel)
-                .frame(minWidth: 280, idealWidth: 320, maxWidth: 400)
+                // Center Pane: Preview Player
+                PreviewPlayerView(viewModel: viewModel)
+                    .frame(minWidth: 400, idealWidth: 600)
+
+                // Right Pane: Settings and Export
+                SettingsPanelView(viewModel: viewModel)
+                    .frame(minWidth: 280, idealWidth: 320, maxWidth: 400)
+            }
         }
         .frame(minWidth: 1000, minHeight: 630)
         .preferredColorScheme(prefersLightMode ? .light : .dark)

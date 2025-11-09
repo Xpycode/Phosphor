@@ -13,22 +13,12 @@ struct PreviewPlayerView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            ZStack {
-                Text("Preview")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .center)
-
-                HStack {
-                    Spacer()
-                    if viewModel.totalFrames > 0 {
-                        Text("Frame \(viewModel.currentFrameIndex + 1) of \(viewModel.totalFrames)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .padding(.horizontal)
-            .frame(height: 44)
+            Text("Preview")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal)
+            // let frame hight stay at 24
+                .frame(height: 24)
 
             Divider()
 
@@ -61,6 +51,12 @@ struct PreviewPlayerView: View {
 
             // Controls
             VStack(spacing: 12) {
+                if viewModel.totalFrames > 0 {
+                    Text("Frame \(viewModel.currentFrameIndex + 1) of \(viewModel.totalFrames)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 // Scrubber
                 if viewModel.totalFrames > 1 {
                     HStack(spacing: 8) {

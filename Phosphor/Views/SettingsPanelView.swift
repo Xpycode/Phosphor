@@ -10,6 +10,16 @@ import UniformTypeIdentifiers
 
 struct SettingsPanelView: View {
     @ObservedObject var viewModel: AppViewModel
+    @State private var lastFiniteLoopCount: Int
+    @State private var loopCountText: String
+
+    init(viewModel: AppViewModel) {
+        self._viewModel = ObservedObject(wrappedValue: viewModel)
+        let initialLoop = viewModel.settings.loopCount == 0 ? 1 : viewModel.settings.loopCount
+        let finiteLoop = max(1, initialLoop)
+        self._lastFiniteLoopCount = State(initialValue: finiteLoop)
+        self._loopCountText = State(initialValue: String(finiteLoop))
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,7 +28,7 @@ struct SettingsPanelView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal)
-                .frame(height: 44)
+                .frame(height: 24)
 
             Divider()
 
@@ -26,7 +36,7 @@ struct SettingsPanelView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // Timing Settings
-                    GroupBox("Timing") {
+                    GroupBox {
                         VStack(alignment: .leading, spacing: 16) {
                             // Frame Rate
                             VStack(alignment: .leading, spacing: 6) {
@@ -73,46 +83,59 @@ struct SettingsPanelView: View {
                             }
                         }
                         .padding(12)
+                    } label: {
+                        EmptyView()
                     }
 
                     // Loop Settings
-                    GroupBox("Loop") {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("Loop Count")
+                    GroupBox {
+                        HStack(spacing: 16) {
+                            Text("Loop Count")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Spacer()
+
+                            Toggle(isOn: Binding(
+                                get: { viewModel.settings.loopCount == 0 },
+                                set: { isInfinite in
+                                    if isInfinite {
+                                        if viewModel.settings.loopCount != 0 {
+                                            lastFiniteLoopCount = max(1, viewModel.settings.loopCount)
+                                            loopCountText = String(lastFiniteLoopCount)
+                                        }
+                                        viewModel.settings.loopCount = 0
+                                    } else {
+                                        viewModel.settings.loopCount = lastFiniteLoopCount
+                                        loopCountText = String(lastFiniteLoopCount)
+                                    }
+                                }
+                            )) {
+                                Text("Infinite")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-
-                                Spacer()
-
-                                Toggle("Infinite", isOn: Binding(
-                                    get: { viewModel.settings.loopCount == 0 },
-                                    set: { viewModel.settings.loopCount = $0 ? 0 : 1 }
-                                ))
-                                .toggleStyle(.switch)
-                                .controlSize(.small)
+                                    .lineLimit(1)
+                                    .fixedSize(horizontal: true, vertical: false)
                             }
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
 
-                            if viewModel.settings.loopCount != 0 {
-                                HStack {
-                                    Text("Repeats:")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                            Spacer()
 
-                                    TextField("", value: $viewModel.settings.loopCount, format: .number)
-                                        .textFieldStyle(.roundedBorder)
-                                        .frame(width: 60)
-
-                                    Stepper("", value: $viewModel.settings.loopCount, in: 1...100)
-                                        .labelsHidden()
-                                }
-                            }
+                            TextField("", text: loopCountTextBinding)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 60)
+                                .disabled(viewModel.settings.loopCount == 0)
+                                .multilineTextAlignment(.trailing)
                         }
-                        .padding(8)
+                        .padding(12)
+                        .frame(maxWidth: .infinity)
+                    } label: {
+                        EmptyView()
                     }
 
                     // Quality Settings
-                    GroupBox("Quality") {
+                    GroupBox {
                         VStack(alignment: .leading, spacing: 12) {
                             // Quality Slider
                             VStack(alignment: .leading, spacing: 6) {
@@ -142,18 +165,29 @@ struct SettingsPanelView: View {
                                 .help("Dithering helps reduce color banding in GIFs")
                         }
                         .padding(12)
+                    } label: {
+                        EmptyView()
                     }
 
                     // Export Format
-                    GroupBox("Export Format") {
-                        Picker("", selection: $viewModel.settings.format) {
-                            ForEach(ExportFormat.allCases, id: \.self) { format in
-                                Text(format.rawValue).tag(format)
+                    GroupBox {
+                        HStack(spacing: 12) {
+                            Text("Export Format")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Picker("", selection: $viewModel.settings.format) {
+                                ForEach(ExportFormat.allCases, id: \.self) { format in
+                                    Text(format.rawValue).tag(format)
+                                }
                             }
+                            .labelsHidden()
+                            .pickerStyle(.segmented)
+                            .frame(maxWidth: .infinity)
                         }
-                        .pickerStyle(.radioGroup)
-                        .font(.caption)
-                        .padding(8)
+                        .padding(12)
+                    } label: {
+                        EmptyView()
                     }
                 }
                 .padding()
@@ -182,6 +216,13 @@ struct SettingsPanelView: View {
             .padding()
         }
         .background(Color(NSColor.controlBackgroundColor))
+        .onChange(of: viewModel.settings.loopCount) { newValue in
+            if newValue != 0 {
+                let clamped = max(1, min(newValue, 100))
+                lastFiniteLoopCount = clamped
+                loopCountText = String(clamped)
+            }
+        }
     }
 
     private func steppedBinding(
@@ -194,6 +235,27 @@ struct SettingsPanelView: View {
             set: { newValue in
                 let snappedValue = (newValue / step).rounded() * step
                 binding.wrappedValue = min(max(snappedValue, range.lowerBound), range.upperBound)
+            }
+        )
+    }
+
+    private var loopCountTextBinding: Binding<String> {
+        Binding(
+            get: {
+                loopCountText
+            },
+            set: { newValue in
+                let filtered = newValue.filter(\.isNumber)
+                loopCountText = filtered
+
+                guard let value = Int(filtered) else { return }
+
+                let clamped = max(1, min(value, 100))
+                lastFiniteLoopCount = clamped
+
+                if viewModel.settings.loopCount != 0 {
+                    viewModel.settings.loopCount = clamped
+                }
             }
         )
     }

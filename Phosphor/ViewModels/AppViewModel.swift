@@ -43,6 +43,13 @@ class AppViewModel: ObservableObject {
     }
 
     init() {
+        settings.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
         // Observe settings changes to update frame rate/delay synchronization
         settings.$frameRate
             .dropFirst()

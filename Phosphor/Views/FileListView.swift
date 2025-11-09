@@ -16,36 +16,30 @@ struct FileListView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            ZStack {
-                Text("Images")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .center)
-
-                HStack {
-                    Spacer()
-                    Text("\(viewModel.sortedImages.count) items")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal)
-            .frame(height: 44)
+            Text("Images")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.horizontal)
+            // let frame hight stay at 24
+                .frame(height: 24)
 
             Divider()
 
             // Sort Order Picker
-            HStack(spacing: 8) {
-                Text("Sort")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            HStack {
+                Spacer()
 
-                Picker("", selection: $viewModel.settings.sortOrder) {
-                    Text("File Name").tag(SortOrder.fileName)
-                    Text("Modified").tag(SortOrder.modificationDate)
-                    Text("Manual").tag(SortOrder.manual)
+                HStack(spacing: 8) {
+                   
+
+                    Picker("", selection: $viewModel.settings.sortOrder) {
+                        Text("File Name").tag(SortOrder.fileName)
+                        Text("Modified").tag(SortOrder.modificationDate)
+                        Text("Manual").tag(SortOrder.manual)
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
 
                 Spacer()
             }
@@ -82,6 +76,12 @@ struct FileListView: View {
                     Label("Add Images", systemImage: "plus")
                 }
                 .buttonStyle(.borderless)
+
+                Spacer()
+
+                Text("\(viewModel.sortedImages.count) items")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 Spacer()
 
