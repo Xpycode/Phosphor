@@ -149,6 +149,7 @@ extension ExportPlatformPreset {
 
 struct ExportResizeConfiguration {
     let targetSize: CGSize
+    let preserveAspectRatio: Bool
 }
 
 class ExportSettings: ObservableObject {
@@ -225,8 +226,15 @@ class ExportSettings: ObservableObject {
         let width = max(1, resizeWidth)
         let height = max(1, resizeHeight)
         let size = CGSize(width: CGFloat(width), height: CGFloat(height))
+        let shouldPreserve: Bool
+        if resizeMode == .common {
+            shouldPreserve = true
+        } else {
+            shouldPreserve = maintainAspectRatio
+        }
         return ExportResizeConfiguration(
-            targetSize: size
+            targetSize: size,
+            preserveAspectRatio: shouldPreserve
         )
     }
 

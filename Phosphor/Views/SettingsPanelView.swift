@@ -304,6 +304,10 @@ struct SettingsPanelView: View {
                                     .frame(maxWidth: .infinity)
                                     .tint(accentColor)
                                 }
+
+                                Text("Presets lock the target width while keeping each frame's aspect ratio. Heights may vary per image.")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
                             } else {
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack(spacing: 12) {
@@ -321,7 +325,20 @@ struct SettingsPanelView: View {
                                     Toggle("Maintain aspect ratio", isOn: $viewModel.settings.maintainAspectRatio)
                                         .font(.caption)
                                         .tint(accentColor)
+
+                                    if viewModel.settings.maintainAspectRatio,
+                                       let inferred = inferredHeight(for: viewModel.settings.resizeWidth) {
+                                        Text("≈ \(Int(inferred)) px tall based on the first image.")
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
+                            }
+
+                            if viewModel.hasMixedAspectRatios {
+                                Text("Warning: selected frames have different aspect ratios. Maintaining aspect ratio keeps each frame's shape, so output dimensions can differ.")
+                                    .font(.caption2)
+                                    .foregroundColor(.orange)
                             }
                         }
                     }
@@ -846,6 +863,12 @@ private extension SettingsPanelView {
         formatter.numberStyle = .decimal
         return formatter
     }()
+
+    func inferredHeight(for width: Double) -> Double? {
+        guard let ratio = viewModel.referenceAspectRatio, ratio > 0 else { return nil }
+        let height = width / ratio
+        return height.isFinite ? height : nil
+    }
 }
 
 private struct AccentSwitchToggleStyle: ToggleStyle {

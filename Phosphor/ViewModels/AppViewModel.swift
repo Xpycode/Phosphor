@@ -64,6 +64,22 @@ class AppViewModel: ObservableObject {
         exportCandidateImages.count
     }
 
+    var referenceAspectRatio: Double? {
+        guard let item = sortedImages.first else { return nil }
+        guard item.resolution.height > 0 else { return nil }
+        return Double(item.resolution.width / item.resolution.height)
+    }
+
+    var hasMixedAspectRatios: Bool {
+        guard let reference = referenceAspectRatio else { return false }
+        let tolerance = 0.01
+        return sortedImages.contains { item in
+            let height = max(item.resolution.height, 1)
+            let ratio = Double(item.resolution.width / height)
+            return abs(ratio - reference) > tolerance
+        }
+    }
+
     func delayForFrame(at index: Int) -> Double {
         guard index >= 0 && index < sortedImages.count else { return settings.frameDelay }
         if settings.overrideCustomFrameTimings {
