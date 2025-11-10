@@ -15,6 +15,7 @@ enum ExportError: LocalizedError {
     case failedToCreateImage
     case failedToFinalizeDestination
     case noImages
+    case fileSizeLimitExceeded(maxBytes: Int64, actualBytes: Int64)
 
     var errorDescription: String? {
         switch self {
@@ -26,6 +27,12 @@ enum ExportError: LocalizedError {
             return "Failed to finalize export"
         case .noImages:
             return "No images to export"
+        case let .fileSizeLimitExceeded(maxBytes, actualBytes):
+            let formatter = ByteCountFormatter()
+            formatter.countStyle = .file
+            let actual = formatter.string(fromByteCount: actualBytes)
+            let max = formatter.string(fromByteCount: maxBytes)
+            return "Export exceeds your size limit (\(actual) > \(max))."
         }
     }
 }
@@ -36,9 +43,11 @@ struct GIFExporter {
         to url: URL,
         frameDelay: Double,
         loopCount: Int,
-        quality _: Double,
-        dithering _: Bool,
+        quality: Double,
+        dithering: Bool,
         resizeConfiguration: ExportResizeConfiguration?,
+        colorDepthLevels: Int?,
+        perFrameDelays: [Double]?,
         progressHandler: @escaping (Double) -> Void
     ) async throws {
         guard !images.isEmpty else {
@@ -63,35 +72,37 @@ struct GIFExporter {
         ]
         CGImageDestinationSetProperties(destination, fileProperties as CFDictionary)
 
-        // Frame properties
-        let frameProperties: [String: Any] = [
-            kCGImagePropertyGIFDictionary as String: [
-                kCGImagePropertyGIFDelayTime as String: frameDelay,
-                kCGImagePropertyGIFUnclampedDelayTime as String: frameDelay
-            ]
-        ]
-
         // Process each image
         for (index, item) in images.enumerated() {
-            try autoreleasepool {
-                guard var nsImage = NSImage(contentsOf: item.url) else {
-                    throw ExportError.failedToCreateImage
-                }
-
-                if let resizeConfiguration = resizeConfiguration {
-                    nsImage = nsImage.resized(
-                        to: resizeConfiguration.targetSize,
-                        preservingAspectRatio: resizeConfiguration.preserveAspectRatio
-                    )
-                }
-
-                guard let cgImage = nsImage.tiffCGImage else {
-                    throw ExportError.failedToCreateImage
-                }
-
-                // Add frame to GIF
-                CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
+            guard var nsImage = NSImage(contentsOf: item.url) else {
+                throw ExportError.failedToCreateImage
             }
+
+            if let resizeConfiguration = resizeConfiguration {
+                nsImage = nsImage.resized(
+                    to: resizeConfiguration.targetSize,
+                    preservingAspectRatio: resizeConfiguration.preserveAspectRatio
+                )
+            }
+
+            if let levels = colorDepthLevels, levels > 0, let reduced = ColorDepthReducer.shared.applyingPosterize(to: nsImage, levels: levels) {
+                nsImage = reduced
+            }
+
+            guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+                throw ExportError.failedToCreateImage
+            }
+
+            let effectiveDelay = perFrameDelays?[index] ?? (frameDelay * 1000.0)
+            let delaySeconds = max(0.01, effectiveDelay / 1000.0)
+            let frameProperties: [String: Any] = [
+                kCGImagePropertyGIFDictionary as String: [
+                    kCGImagePropertyGIFDelayTime as String: delaySeconds,
+                    kCGImagePropertyGIFUnclampedDelayTime as String: delaySeconds
+                ]
+            ]
+
+            CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
 
             // Update progress
             let progress = Double(index + 1) / Double(images.count)
@@ -108,9 +119,7 @@ struct GIFExporter {
 }
 
 extension NSImage {
-    /// Converts NSImage to CGImage using TIFF representation.
-    /// Named to avoid shadowing the native NSImage.cgImage(forProposedRect:context:hints:) method.
-    var tiffCGImage: CGImage? {
+    func cgImage(forProposedRect proposedDestRect: UnsafeMutablePointer<NSRect>?, context: NSGraphicsContext?, hints: [NSImageRep.HintKey: Any]?) -> CGImage? {
         guard let imageData = self.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: imageData) else {
             return nil

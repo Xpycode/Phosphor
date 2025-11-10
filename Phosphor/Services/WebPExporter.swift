@@ -12,11 +12,12 @@ struct WebPExporter {
     static func export(
         images: [ImageItem],
         to url: URL,
-        frameDelay _: Double,
-        loopCount _: Int,
-        quality _: Double,
+        frameDelay: Double,
+        loopCount: Int,
+        quality: Double,
         resizeConfiguration _: ExportResizeConfiguration?,
-        progressHandler _: @escaping (Double) -> Void
+        perFrameDelays _: [Double]?,
+        progressHandler: @escaping (Double) -> Void
     ) async throws {
         guard !images.isEmpty else {
             throw ExportError.noImages

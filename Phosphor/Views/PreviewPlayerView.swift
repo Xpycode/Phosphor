@@ -88,7 +88,7 @@ struct PreviewPlayerView: View {
 
                 // Playback Controls
                 HStack(spacing: 12) {
-                    Button(action: viewModel.previousFrame) {
+                    Button(action: { viewModel.previousFrame() }) {
                         Image(systemName: "backward")
                             .font(.title3)
                     }
@@ -105,13 +105,18 @@ struct PreviewPlayerView: View {
                     .disabled(viewModel.totalFrames <= 1)
                     .help(viewModel.isPlaying ? "Pause" : "Play")
 
-                    Button(action: viewModel.nextFrame) {
+                    Button(action: { viewModel.nextFrame() }) {
                         Image(systemName: "forward")
                             .font(.title3)
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.totalFrames <= 1)
                     .help("Next frame")
+                }
+
+                if viewModel.totalFrames > 0, let item = viewModel.currentImageItem {
+                    currentFrameTimingControl(for: item)
+                        .padding(.top, 8)
                 }
             }
             .padding(.horizontal, 16)
@@ -166,6 +171,71 @@ private extension PreviewPlayerView {
                 Spacer()
             }
         }
+    }
+
+    @ViewBuilder
+    func currentFrameTimingControl(for item: ImageItem) -> some View {
+        let isCustom = viewModel.customFrameDelays[item.id] != nil && !viewModel.settings.overrideCustomFrameTimings
+
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Frame Timing")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("\(Int(viewModel.currentFrameDelayValue)) ms")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(isCustom ? .primary : .secondary)
+                if viewModel.settings.overrideCustomFrameTimings {
+                    Text("Overridden by FPS slider")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                } else if isCustom {
+                    Text("Custom")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                } else {
+                    Text("Default")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Slider(
+                value: currentFrameDelayBinding,
+                in: 10...1000,
+                step: 5
+            )
+            .tint(isCustom ? accentColor : .secondary)
+            .disabled(viewModel.settings.overrideCustomFrameTimings)
+            .help(viewModel.settings.overrideCustomFrameTimings ? "Disable slider override in Advanced settings to adjust per-frame timing." : "Adjust the duration for this frame.")
+
+            HStack {
+                Button("Reset to default") {
+                    viewModel.resetCurrentFrameDelay()
+                }
+                .buttonStyle(.borderless)
+                .font(.caption2)
+                .disabled(!isCustom || viewModel.settings.overrideCustomFrameTimings)
+
+                Spacer()
+
+                Text("10 ms")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+
+                Text("1000 ms")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    var currentFrameDelayBinding: Binding<Double> {
+        Binding(
+            get: { viewModel.currentFrameDelayValue },
+            set: { viewModel.setCurrentFrameDelay($0) }
+        )
     }
 }
 

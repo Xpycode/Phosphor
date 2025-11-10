@@ -48,7 +48,7 @@ struct ContentView: View {
                     .frame(minWidth: 340, idealWidth: 370, maxWidth: 400)
             }
         }
-        .frame(minWidth: 1040, minHeight: 700)
+        .frame(minWidth: 1040, minHeight: 800)
         .preferredColorScheme(prefersLightMode ? .light : .dark)
         .accentColor(activeAccentColor)
         .environment(\.appAccentColor, activeAccentColor)

@@ -55,6 +55,19 @@ struct ResizePresetOption: Identifiable {
     }
 }
 
+struct ExportPlatformPreset: Identifiable {
+    let id: String
+    let label: String
+    let maxDimensions: CGSize
+    let maxFileSizeMB: Double
+    let recommendedFrameRate: Double
+    let notes: String
+
+    var formattedDimensions: String {
+        "\(Int(maxDimensions.width))×\(Int(maxDimensions.height))"
+    }
+}
+
 extension ResizePresetOption {
     static func presets(for format: ExportFormat) -> [ResizePresetOption] {
         switch format {
@@ -91,8 +104,52 @@ extension ResizePresetOption {
     }
 }
 
+extension ExportPlatformPreset {
+    static var presets: [ExportPlatformPreset] {
+        [
+            .init(
+                id: "whatsapp-sticker",
+                label: "WhatsApp Sticker",
+                maxDimensions: CGSize(width: 512, height: 512),
+                maxFileSizeMB: 1,
+                recommendedFrameRate: 8,
+                notes: "512×512 px, < 1 MB"
+            ),
+            .init(
+                id: "discord-emoji",
+                label: "Discord Emoji",
+                maxDimensions: CGSize(width: 320, height: 320),
+                maxFileSizeMB: 0.48,
+                recommendedFrameRate: 15,
+                notes: "320×320 px, 512 KB"
+            ),
+            .init(
+                id: "slack-sticker",
+                label: "Slack Sticker",
+                maxDimensions: CGSize(width: 512, height: 512),
+                maxFileSizeMB: 0.98,
+                recommendedFrameRate: 12,
+                notes: "512×512 px, 1 MB"
+            ),
+            .init(
+                id: "telegram-sticker",
+                label: "Telegram Sticker",
+                maxDimensions: CGSize(width: 512, height: 512),
+                maxFileSizeMB: 1.9,
+                recommendedFrameRate: 24,
+                notes: "Animated sticker, < 2 MB"
+            )
+        ]
+    }
+
+    static func preset(id: String) -> ExportPlatformPreset? {
+        presets.first { $0.id == id }
+    }
+}
+
 struct ExportResizeConfiguration {
     let targetSize: CGSize
+    let maintainAspectRatio: Bool
     let preserveAspectRatio: Bool
 }
 
@@ -110,6 +167,14 @@ class ExportSettings: ObservableObject {
     @Published var resizeMode: ResizeMode = .common
     @Published var selectedResizePresetID: String = ResizePresetOption.defaultID(for: .gif)
     @Published var maintainAspectRatio: Bool = true
+    @Published var frameSkippingEnabled: Bool = false
+    @Published var frameSkipInterval: Int = 2
+    @Published var sizeLimitEnabled: Bool = false
+    @Published var maxFileSizeMB: Double = 8
+    @Published var selectedPlatformTargetID: String?
+    @Published var colorDepthEnabled: Bool = false
+    @Published var colorDepthLevels: Double = 16 // corresponds to CIColorPosterize levels
+    @Published var overrideCustomFrameTimings: Bool = false
 
     private var isUpdating = false
 
@@ -164,7 +229,28 @@ class ExportSettings: ObservableObject {
         let size = CGSize(width: CGFloat(width), height: CGFloat(height))
         return ExportResizeConfiguration(
             targetSize: size,
+            maintainAspectRatio: maintainAspectRatio,
             preserveAspectRatio: maintainAspectRatio
         )
+    }
+
+    var effectiveFrameSkipInterval: Int {
+        guard frameSkippingEnabled else { return 1 }
+        return max(1, frameSkipInterval)
+    }
+
+    var maxFileSizeBytes: Int64 {
+        Int64(max(1, maxFileSizeMB) * 1024 * 1024)
+    }
+
+    var clampedColorDepthLevels: Int {
+        let levels = Int(colorDepthLevels.rounded())
+        return colorDepthEnabled ? max(2, min(levels, 30)) : 0
+    }
+
+    var approximateColorCount: Int {
+        let levels = clampedColorDepthLevels
+        guard levels > 0 else { return 0 }
+        return Int(pow(Double(levels), 3.0))
     }
 }

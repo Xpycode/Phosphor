@@ -19,6 +19,7 @@
 		100000000000000A /* WebPExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000A /* WebPExporter.swift */; };
 		100000000000000B /* APNGExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000B /* APNGExporter.swift */; };
 		100000000000000C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000C /* Assets.xcassets */; };
+		100000000000000D /* ColorDepthReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000E /* ColorDepthReducer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +36,7 @@
 		200000000000000B /* APNGExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APNGExporter.swift; sourceTree = "<group>"; };
 		200000000000000C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		200000000000000D /* Phosphor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Phosphor.entitlements; sourceTree = "<group>"; };
+		200000000000000E /* ColorDepthReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorDepthReducer.swift; sourceTree = "<group>"; };
 		300000000000000E /* Phosphor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Phosphor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -113,6 +115,7 @@
 				2000000000000009 /* GIFExporter.swift */,
 				200000000000000A /* WebPExporter.swift */,
 				200000000000000B /* APNGExporter.swift */,
+				200000000000000E /* ColorDepthReducer.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -197,6 +200,7 @@
 				1000000000000009 /* GIFExporter.swift in Sources */,
 				100000000000000A /* WebPExporter.swift in Sources */,
 				100000000000000B /* APNGExporter.swift in Sources */,
+				100000000000000D /* ColorDepthReducer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

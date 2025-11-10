@@ -17,6 +17,7 @@ struct APNGExporter {
         frameDelay: Double,
         loopCount: Int,
         resizeConfiguration: ExportResizeConfiguration?,
+        perFrameDelays: [Double]?,
         progressHandler: @escaping (Double) -> Void
     ) async throws {
         guard !images.isEmpty else {
@@ -41,34 +42,32 @@ struct APNGExporter {
         ]
         CGImageDestinationSetProperties(destination, fileProperties as CFDictionary)
 
-        // Frame properties
-        let frameProperties: [String: Any] = [
-            kCGImagePropertyPNGDictionary as String: [
-                kCGImagePropertyAPNGDelayTime as String: frameDelay
-            ]
-        ]
-
         // Process each image
         for (index, item) in images.enumerated() {
-            try autoreleasepool {
-                guard var nsImage = NSImage(contentsOf: item.url) else {
-                    throw ExportError.failedToCreateImage
-                }
-
-                if let resizeConfiguration = resizeConfiguration {
-                    nsImage = nsImage.resized(
-                        to: resizeConfiguration.targetSize,
-                        preservingAspectRatio: resizeConfiguration.preserveAspectRatio
-                    )
-                }
-
-                guard let cgImage = nsImage.tiffCGImage else {
-                    throw ExportError.failedToCreateImage
-                }
-
-                // Add frame to APNG
-                CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
+            guard var nsImage = NSImage(contentsOf: item.url) else {
+                throw ExportError.failedToCreateImage
             }
+
+            if let resizeConfiguration = resizeConfiguration {
+                nsImage = nsImage.resized(
+                    to: resizeConfiguration.targetSize,
+                    preservingAspectRatio: resizeConfiguration.preserveAspectRatio
+                )
+            }
+
+            guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+                throw ExportError.failedToCreateImage
+            }
+
+            let effectiveDelay = perFrameDelays?[index] ?? (frameDelay * 1000.0)
+            let delaySeconds = max(0.01, effectiveDelay / 1000.0)
+            let frameProperties: [String: Any] = [
+                kCGImagePropertyPNGDictionary as String: [
+                    kCGImagePropertyAPNGDelayTime as String: delaySeconds
+                ]
+            ]
+
+            CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
 
             // Update progress
             let progress = Double(index + 1) / Double(images.count)

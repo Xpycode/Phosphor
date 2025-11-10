@@ -21,6 +21,7 @@ class AppViewModel: ObservableObject {
     @Published var isImporting = false
     @Published var importProgress: Double = 0.0
     @Published var importTaskID = UUID()
+    @Published var customFrameDelays: [UUID: Double] = [:] // ms override per frame
     private var currentImportTask: Task<Void, Never>?
 
     private var playbackTimer: Timer?
@@ -52,6 +53,94 @@ class AppViewModel: ObservableObject {
         sortedImages.count
     }
 
+    var exportCandidateImages: [ImageItem] {
+        let interval = settings.effectiveFrameSkipInterval
+        guard interval > 1 else { return sortedImages }
+        guard !sortedImages.isEmpty else { return [] }
+        return stride(from: 0, to: sortedImages.count, by: interval).map { sortedImages[$0] }
+    }
+
+    var exportFrameCount: Int {
+        exportCandidateImages.count
+    }
+
+    func delayForFrame(at index: Int) -> Double {
+        guard index >= 0 && index < sortedImages.count else { return settings.frameDelay }
+        if settings.overrideCustomFrameTimings {
+            return settings.frameDelay
+        }
+        let item = sortedImages[index]
+        return customFrameDelays[item.id] ?? settings.frameDelay
+    }
+
+    func delayForImage(_ item: ImageItem) -> Double {
+        if settings.overrideCustomFrameTimings {
+            return settings.frameDelay
+        }
+        return customFrameDelays[item.id] ?? settings.frameDelay
+    }
+
+    var hasCustomFrameDelays: Bool {
+        !customFrameDelays.isEmpty
+    }
+
+    var estimatedExportSizeBytes: Int64? {
+        let frames = exportCandidateImages
+        guard !frames.isEmpty else { return nil }
+        let totalBytes = frames.reduce(into: Int64(0)) { $0 += $1.fileSize }
+        guard totalBytes > 0 else { return nil }
+
+        var compressionFactor: Double
+        switch settings.format {
+        case .gif:
+            compressionFactor = 0.38
+        case .webp:
+            compressionFactor = 0.22
+        case .apng:
+            compressionFactor = 0.9
+        }
+
+        let qualityFactor = 0.6 + (settings.quality * 0.4)
+        let colorDepthFactor = settings.colorDepthEnabled
+            ? max(0.2, Double(settings.clampedColorDepthLevels) / 30.0)
+            : 1.0
+
+        var resizeFactor = 1.0
+        if settings.resizeEnabled {
+            let averageArea = frames
+                .map { Double($0.resolution.width * $0.resolution.height) }
+                .reduce(0, +) / Double(frames.count)
+            if averageArea > 0 {
+                let targetArea = settings.resizeWidth * settings.resizeHeight
+                let ratio = targetArea / averageArea
+                resizeFactor = max(0.1, min(ratio, 1.0))
+            }
+        }
+
+        let estimatedBytes = Double(totalBytes)
+            * compressionFactor
+            * qualityFactor
+            * resizeFactor
+            * colorDepthFactor
+        return Int64(estimatedBytes)
+    }
+
+    var estimatedExportSizeString: String? {
+        guard let bytes = estimatedExportSizeBytes else { return nil }
+        return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+    }
+
+    var exportSizeLimitBytes: Int64? {
+        settings.sizeLimitEnabled ? settings.maxFileSizeBytes : nil
+    }
+
+    var estimatedExceedsSizeLimit: Bool {
+        guard let limit = exportSizeLimitBytes, let estimate = estimatedExportSizeBytes else {
+            return false
+        }
+        return estimate > limit
+    }
+
     init() {
         settings.objectWillChange
             .receive(on: DispatchQueue.main)
@@ -69,7 +158,9 @@ class AppViewModel: ObservableObject {
             .dropFirst()
             .removeDuplicates()
             .sink { [weak self] _ in
-                self?.settings.updateDelayFromFrameRate()
+                DispatchQueue.main.async {
+                    self?.settings.updateDelayFromFrameRate()
+                }
             }
             .store(in: &cancellables)
 
@@ -77,10 +168,8 @@ class AppViewModel: ObservableObject {
             .dropFirst()
             .removeDuplicates()
             .sink { [weak self] _ in
-                self?.settings.updateFrameRateFromDelay()
-                // Reschedule timer if playback is active
-                if self?.isPlaying == true {
-                    self?.restartPlaybackTimer()
+                DispatchQueue.main.async {
+                    self?.settings.updateFrameRateFromDelay()
                 }
             }
             .store(in: &cancellables)
@@ -89,28 +178,15 @@ class AppViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] newOrder in
                 guard let self = self else { return }
-                // Preserve current image across sort order changes
-                let currentImageID = self.currentImageItem?.id
-
-                if newOrder == .manual {
-                    self.applyAutomaticSort(order: self.lastAutomaticSortOrder)
-                } else {
-                    self.lastAutomaticSortOrder = newOrder
-                }
-
-                // Restore frame index to point to the same image
-                if let currentImageID = currentImageID,
-                   let newIndex = self.sortedImages.firstIndex(where: { $0.id == currentImageID }) {
-                    self.currentFrameIndex = newIndex
+                DispatchQueue.main.async {
+                    if newOrder == .manual {
+                        self.applyAutomaticSort(order: self.lastAutomaticSortOrder)
+                    } else {
+                        self.lastAutomaticSortOrder = newOrder
+                    }
                 }
             }
             .store(in: &cancellables)
-    }
-
-    deinit {
-        playbackTimer?.invalidate()
-        playbackTimer = nil
-        currentImportTask?.cancel()
     }
 
     func addImages(from urls: [URL]) {
@@ -139,7 +215,7 @@ class AppViewModel: ObservableObject {
                     }
                 }
 
-                if importBuffer.count == ExportConstants.importBatchSize || index == urlsCopy.count - 1 || Task.isCancelled {
+                if importBuffer.count == 8 || index == urlsCopy.count - 1 || Task.isCancelled {
                     let flushedItems = importBuffer
                     importBuffer.removeAll(keepingCapacity: true)
 
@@ -178,6 +254,7 @@ class AppViewModel: ObservableObject {
 
     func removeImage(_ item: ImageItem) {
         imageItems.removeAll { $0.id == item.id }
+        customFrameDelays.removeValue(forKey: item.id)
         if currentFrameIndex >= imageItems.count && currentFrameIndex > 0 {
             currentFrameIndex = imageItems.count - 1
         }
@@ -187,10 +264,47 @@ class AppViewModel: ObservableObject {
         imageItems.removeAll()
         currentFrameIndex = 0
         stopPlayback()
+        customFrameDelays.removeAll()
     }
 
     func moveItems(from source: IndexSet, to destination: Int) {
         imageItems.move(fromOffsets: source, toOffset: destination)
+    }
+
+    // MARK: - Frame Timing
+
+    func setCustomFrameDelay(for item: ImageItem, delay: Double) {
+        let clamped = min(max(delay, 10), 1000)
+        customFrameDelays[item.id] = clamped
+    }
+
+    func resetCustomFrameDelay(for item: ImageItem) {
+        customFrameDelays.removeValue(forKey: item.id)
+    }
+
+    func resetAllCustomFrameDelays() {
+        customFrameDelays.removeAll()
+    }
+
+    func perFrameDelays(for exportFrames: [ImageItem]) -> [Double] {
+        if settings.overrideCustomFrameTimings {
+            return Array(repeating: settings.frameDelay, count: exportFrames.count)
+        }
+        return exportFrames.map { customFrameDelays[$0.id] ?? settings.frameDelay }
+    }
+
+    var currentFrameDelayValue: Double {
+        delayForFrame(at: currentFrameIndex)
+    }
+
+    func setCurrentFrameDelay(_ delay: Double) {
+        guard let item = currentImageItem else { return }
+        setCustomFrameDelay(for: item, delay: delay)
+    }
+
+    func resetCurrentFrameDelay() {
+        guard let item = currentImageItem else { return }
+        resetCustomFrameDelay(for: item)
     }
 
     // MARK: - Playback Controls
@@ -206,17 +320,8 @@ class AppViewModel: ObservableObject {
     func startPlayback() {
         guard !sortedImages.isEmpty else { return }
         isPlaying = true
-        restartPlaybackTimer()
-    }
 
-    private func restartPlaybackTimer() {
-        playbackTimer?.invalidate()
-        playbackTimer = Timer.scheduledTimer(withTimeInterval: settings.frameDelay / 1000.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            Task { @MainActor in
-                self.nextFrame()
-            }
-        }
+        scheduleNextPlaybackTick()
     }
 
     func stopPlayback() {
@@ -225,19 +330,43 @@ class AppViewModel: ObservableObject {
         playbackTimer = nil
     }
 
-    func nextFrame() {
+    func nextFrame(reschedule: Bool = true) {
         guard !sortedImages.isEmpty else { return }
         currentFrameIndex = (currentFrameIndex + 1) % sortedImages.count
+        if isPlaying && reschedule {
+            scheduleNextPlaybackTick()
+        }
     }
 
-    func previousFrame() {
+    func previousFrame(reschedule: Bool = true) {
         guard !sortedImages.isEmpty else { return }
         currentFrameIndex = (currentFrameIndex - 1 + sortedImages.count) % sortedImages.count
+        if isPlaying && reschedule {
+            scheduleNextPlaybackTick()
+        }
     }
 
     func seekToFrame(_ index: Int) {
         guard index >= 0 && index < sortedImages.count else { return }
         currentFrameIndex = index
+        if isPlaying {
+            scheduleNextPlaybackTick()
+        }
+    }
+
+    private func scheduleNextPlaybackTick() {
+        playbackTimer?.invalidate()
+        guard isPlaying, !sortedImages.isEmpty else { return }
+        let delayMilliseconds = delayForFrame(at: currentFrameIndex)
+        let interval = max(0.01, delayMilliseconds / 1000.0)
+        playbackTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            guard let self = self else { return }
+            Task { @MainActor in
+                guard self.isPlaying else { return }
+                self.nextFrame(reschedule: false)
+                self.scheduleNextPlaybackTick()
+            }
+        }
     }
 
     // MARK: - Export
@@ -252,9 +381,15 @@ class AppViewModel: ObservableObject {
             exportProgress = 0.0
         }
 
-        let images = sortedImages
+        let images = exportCandidateImages
+        guard !images.isEmpty else {
+            throw ExportError.noImages
+        }
 
         let resizeConfiguration = settings.activeResizeConfiguration
+        let sizeLimitBytes = exportSizeLimitBytes
+        let colorDepthLevels = settings.clampedColorDepthLevels
+        let perFrameDelays = perFrameDelays(for: images)
 
         switch settings.format {
         case .gif:
@@ -266,6 +401,8 @@ class AppViewModel: ObservableObject {
                 quality: settings.quality,
                 dithering: settings.enableDithering,
                 resizeConfiguration: resizeConfiguration,
+                colorDepthLevels: colorDepthLevels > 0 ? colorDepthLevels : nil,
+                perFrameDelays: perFrameDelays,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor in
                         self?.exportProgress = progress
@@ -280,6 +417,7 @@ class AppViewModel: ObservableObject {
                 loopCount: settings.loopCount,
                 quality: settings.quality,
                 resizeConfiguration: resizeConfiguration,
+                perFrameDelays: perFrameDelays,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor in
                         self?.exportProgress = progress
@@ -293,12 +431,21 @@ class AppViewModel: ObservableObject {
                 frameDelay: settings.frameDelay / 1000.0,
                 loopCount: settings.loopCount,
                 resizeConfiguration: resizeConfiguration,
+                perFrameDelays: perFrameDelays,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor in
                         self?.exportProgress = progress
                     }
                 }
             )
+        }
+
+        if let limit = sizeLimitBytes {
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            let actualSize = (attributes[.size] as? NSNumber)?.int64Value ?? 0
+            if actualSize > limit {
+                throw ExportError.fileSizeLimitExceeded(maxBytes: limit, actualBytes: actualSize)
+            }
         }
 
         exportCompletionDate = Date()
