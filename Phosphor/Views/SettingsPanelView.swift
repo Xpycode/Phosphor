@@ -69,26 +69,36 @@ struct SettingsPanelView: View {
             }
         }
         .onChange(of: viewModel.settings.format) { _, newValue in
-            syncPresetSelectionWithFormat()
-            if newValue != .gif {
-                viewModel.settings.colorDepthEnabled = false
+            DispatchQueue.main.async {
+                syncPresetSelectionWithFormat()
+                if newValue != .gif {
+                    viewModel.settings.colorDepthEnabled = false
+                }
             }
         }
         .onChange(of: viewModel.settings.selectedResizePresetID) { _, _ in
-            applySelectedPresetIfNeeded()
+            DispatchQueue.main.async {
+                applySelectedPresetIfNeeded()
+            }
         }
         .onChange(of: viewModel.settings.resizeMode) { _, newValue in
             if newValue == .common {
-                syncPresetSelectionWithFormat()
+                DispatchQueue.main.async {
+                    syncPresetSelectionWithFormat()
+                }
             }
         }
         .onChange(of: viewModel.settings.resizeEnabled) { _, newValue in
             if newValue && viewModel.settings.resizeMode == .common {
-                syncPresetSelectionWithFormat()
+                DispatchQueue.main.async {
+                    syncPresetSelectionWithFormat()
+                }
             }
         }
         .onChange(of: viewModel.settings.selectedPlatformTargetID) { _, newValue in
-            applyPlatformPresetIfNeeded(for: newValue)
+            DispatchQueue.main.async {
+                applyPlatformPresetIfNeeded(for: newValue)
+            }
         }
     }
 
