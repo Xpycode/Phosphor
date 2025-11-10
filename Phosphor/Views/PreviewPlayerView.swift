@@ -55,7 +55,7 @@ struct PreviewPlayerView: View {
 
             Divider()
 
-            // Controls
+            // Playback Controls sit directly beneath the preview
             VStack(spacing: 4) {
                 // Scrubber
                 if viewModel.totalFrames > 1 {
@@ -120,9 +120,57 @@ struct PreviewPlayerView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .frame(height: footerHeight)
+            .padding(.vertical, 12)
+
+            Divider()
+
+            footerInfoView
+                .padding(.horizontal, 16)
+                .frame(height: footerHeight)
         }
         .background(Color(NSColor.controlBackgroundColor))
+    }
+}
+
+private extension PreviewPlayerView {
+    @ViewBuilder
+    var footerInfoView: some View {
+        if let item = viewModel.currentImageItem {
+            HStack(alignment: .firstTextBaseline, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.fileName)
+                        .font(.caption)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+
+                    Text("\(item.resolutionString) • \(item.fileSizeFormatted)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Frame \(viewModel.currentFrameIndex + 1) of \(max(viewModel.totalFrames, 1))")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    Text(item.modificationDate, format: .dateTime
+                        .year(.defaultDigits)
+                        .month(.abbreviated)
+                        .day(.twoDigits))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        } else {
+            HStack {
+                Text("Select an image to view playback controls and details.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+        }
     }
 }
 

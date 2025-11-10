@@ -38,6 +38,11 @@ class AppViewModel: ObservableObject {
         }
     }
 
+    var currentImageItem: ImageItem? {
+        guard !sortedImages.isEmpty, currentFrameIndex < sortedImages.count else { return nil }
+        return sortedImages[currentFrameIndex]
+    }
+
     var currentImage: NSImage? {
         guard !sortedImages.isEmpty, currentFrameIndex < sortedImages.count else { return nil }
         return NSImage(contentsOf: sortedImages[currentFrameIndex].url)
