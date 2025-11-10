@@ -51,7 +51,7 @@ struct APNGExporter {
             if let resizeConfiguration = resizeConfiguration {
                 nsImage = nsImage.resized(
                     to: resizeConfiguration.targetSize,
-                    preservingAspectRatio: resizeConfiguration.preserveAspectRatio
+                    preservingAspectRatio: false
                 )
             }
 
