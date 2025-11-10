@@ -9,6 +9,12 @@ import SwiftUI
 
 struct PreviewPlayerView: View {
     @ObservedObject var viewModel: AppViewModel
+    private let footerHeight: CGFloat = 60
+    @AppStorage("useOrangeAccent") private var useOrangeAccent = false
+
+    private var accentColor: Color {
+        useOrangeAccent ? .orange : Color(nsColor: NSColor.controlAccentColor)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -50,7 +56,7 @@ struct PreviewPlayerView: View {
             Divider()
 
             // Controls
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 if viewModel.totalFrames > 0 {
                     Text("Frame \(viewModel.currentFrameIndex + 1) of \(viewModel.totalFrames)")
                         .font(.caption)
@@ -73,6 +79,7 @@ struct PreviewPlayerView: View {
                             in: 0...Double(max(0, viewModel.totalFrames - 1)),
                             step: 1
                         )
+                        .tint(accentColor)
 
                         Text("\(viewModel.totalFrames)")
                             .font(.caption.monospacedDigit())
@@ -92,7 +99,7 @@ struct PreviewPlayerView: View {
                 // Playback Controls
                 HStack(spacing: 16) {
                     Button(action: viewModel.previousFrame) {
-                        Image(systemName: "backward.frame")
+                        Image(systemName: "backward")
                             .font(.title2)
                     }
                     .buttonStyle(.plain)
@@ -100,15 +107,16 @@ struct PreviewPlayerView: View {
                     .help("Previous frame")
 
                     Button(action: viewModel.togglePlayback) {
-                        Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                            .font(.system(size: 44))
+                        Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 32, weight: .semibold))
+                            .frame(width: 48, height: 48)
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.totalFrames <= 1)
                     .help(viewModel.isPlaying ? "Pause" : "Play")
 
                     Button(action: viewModel.nextFrame) {
-                        Image(systemName: "forward.frame")
+                        Image(systemName: "forward")
                             .font(.title2)
                     }
                     .buttonStyle(.plain)
@@ -116,7 +124,8 @@ struct PreviewPlayerView: View {
                     .help("Next frame")
                 }
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .frame(height: footerHeight)
         }
         .background(Color(NSColor.controlBackgroundColor))
     }

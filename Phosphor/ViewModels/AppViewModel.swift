@@ -17,6 +17,7 @@ class AppViewModel: ObservableObject {
     @Published var currentFrameIndex = 0
     @Published var isExporting = false
     @Published var exportProgress: Double = 0.0
+    @Published var exportCompletionDate: Date?
 
     private var playbackTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -46,7 +47,11 @@ class AppViewModel: ObservableObject {
         settings.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.objectWillChange.send()
+                guard let self = self else { return }
+                self.objectWillChange.send()
+                if !self.isExporting {
+                    self.exportCompletionDate = nil
+                }
             }
             .store(in: &cancellables)
 
@@ -155,6 +160,7 @@ class AppViewModel: ObservableObject {
     func exportAnimation(to url: URL) async throws {
         isExporting = true
         exportProgress = 0.0
+        exportCompletionDate = nil
 
         defer {
             isExporting = false
@@ -162,6 +168,8 @@ class AppViewModel: ObservableObject {
         }
 
         let images = sortedImages
+
+        let resizeConfiguration = settings.activeResizeConfiguration
 
         switch settings.format {
         case .gif:
@@ -172,6 +180,7 @@ class AppViewModel: ObservableObject {
                 loopCount: settings.loopCount,
                 quality: settings.quality,
                 dithering: settings.enableDithering,
+                resizeConfiguration: resizeConfiguration,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor in
                         self?.exportProgress = progress
@@ -185,6 +194,7 @@ class AppViewModel: ObservableObject {
                 frameDelay: settings.frameDelay / 1000.0,
                 loopCount: settings.loopCount,
                 quality: settings.quality,
+                resizeConfiguration: resizeConfiguration,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor in
                         self?.exportProgress = progress
@@ -197,6 +207,7 @@ class AppViewModel: ObservableObject {
                 to: url,
                 frameDelay: settings.frameDelay / 1000.0,
                 loopCount: settings.loopCount,
+                resizeConfiguration: resizeConfiguration,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor in
                         self?.exportProgress = progress
@@ -204,6 +215,8 @@ class AppViewModel: ObservableObject {
                 }
             )
         }
+
+        exportCompletionDate = Date()
     }
 
     private func applyAutomaticSort(order: SortOrder) {

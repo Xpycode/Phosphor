@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreGraphics
 
 enum ExportFormat: String, CaseIterable {
     case gif = "GIF"
@@ -27,6 +28,63 @@ enum SortOrder: String, CaseIterable {
     case manual = "Manual"
 }
 
+enum ResizeMode: String, CaseIterable {
+    case common
+    case custom
+}
+
+struct ResizePresetOption: Identifiable {
+    let id: String
+    let label: String
+    let width: Double
+    let height: Double
+
+    var displayLabel: String {
+        "\(label) (\(Int(width))×\(Int(height)))"
+    }
+}
+
+extension ResizePresetOption {
+    static func presets(for format: ExportFormat) -> [ResizePresetOption] {
+        switch format {
+        case .gif:
+            return [
+                .init(id: "gif-square", label: "Square", width: 480, height: 480),
+                .init(id: "gif-sd", label: "SD", width: 640, height: 480),
+                .init(id: "gif-720", label: "HD 720p", width: 1280, height: 720),
+                .init(id: "gif-1080", label: "HD 1080p", width: 1920, height: 1080)
+            ]
+        case .webp:
+            return [
+                .init(id: "webp-story", label: "Story", width: 1080, height: 1920),
+                .init(id: "webp-720", label: "HD 720p", width: 1280, height: 720),
+                .init(id: "webp-1080", label: "HD 1080p", width: 1920, height: 1080),
+                .init(id: "webp-1440", label: "QHD", width: 2560, height: 1440)
+            ]
+        case .apng:
+            return [
+                .init(id: "apng-small", label: "Small", width: 512, height: 512),
+                .init(id: "apng-720", label: "HD 720p", width: 1280, height: 720),
+                .init(id: "apng-1080", label: "HD 1080p", width: 1920, height: 1080),
+                .init(id: "apng-1440", label: "QHD", width: 2560, height: 1440)
+            ]
+        }
+    }
+
+    static func defaultID(for format: ExportFormat) -> String {
+        presets(for: format).first?.id ?? "custom"
+    }
+
+    static func preset(for format: ExportFormat, id: String) -> ResizePresetOption? {
+        presets(for: format).first { $0.id == id }
+    }
+}
+
+struct ExportResizeConfiguration {
+    let targetSize: CGSize
+    let preserveAspectRatio: Bool
+}
+
 class ExportSettings: ObservableObject {
     @Published var format: ExportFormat = .gif
     @Published var frameDelay: Double = 100 // milliseconds
@@ -35,6 +93,12 @@ class ExportSettings: ObservableObject {
     @Published var quality: Double = 0.8 // 0.0 to 1.0
     @Published var enableDithering: Bool = true
     @Published var sortOrder: SortOrder = .fileName
+    @Published var resizeEnabled: Bool = false
+    @Published var resizeWidth: Double = 640
+    @Published var resizeHeight: Double = 480
+    @Published var resizeMode: ResizeMode = .common
+    @Published var selectedResizePresetID: String = ResizePresetOption.defaultID(for: .gif)
+    @Published var maintainAspectRatio: Bool = true
 
     private var isUpdating = false
     private let frameRateRange: ClosedRange<Double> = 1...60
@@ -81,5 +145,16 @@ class ExportSettings: ObservableObject {
 
     private func snapFrameRate(_ value: Double) -> Double {
         min(max(value.rounded(), frameRateRange.lowerBound), frameRateRange.upperBound)
+    }
+
+    var activeResizeConfiguration: ExportResizeConfiguration? {
+        guard resizeEnabled else { return nil }
+        let width = max(1, resizeWidth)
+        let height = max(1, resizeHeight)
+        let size = CGSize(width: CGFloat(width), height: CGFloat(height))
+        return ExportResizeConfiguration(
+            targetSize: size,
+            preserveAspectRatio: maintainAspectRatio
+        )
     }
 }

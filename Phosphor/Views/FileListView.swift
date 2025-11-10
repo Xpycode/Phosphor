@@ -12,6 +12,12 @@ struct FileListView: View {
     @ObservedObject var viewModel: AppViewModel
     @State private var isTargeted = false
     @State private var draggingItem: ImageItem?
+    private let footerHeight: CGFloat = 60
+    @AppStorage("useOrangeAccent") private var useOrangeAccent = false
+
+    private var accentColor: Color {
+        useOrangeAccent ? .orange : Color(nsColor: NSColor.controlAccentColor)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,13 +38,14 @@ struct FileListView: View {
                 HStack(spacing: 8) {
                    
 
-                    Picker("", selection: $viewModel.settings.sortOrder) {
-                        Text("File Name").tag(SortOrder.fileName)
-                        Text("Modified").tag(SortOrder.modificationDate)
-                        Text("Manual").tag(SortOrder.manual)
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
+                Picker("", selection: $viewModel.settings.sortOrder) {
+                    Text("File Name").tag(SortOrder.fileName)
+                    Text("Modified").tag(SortOrder.modificationDate)
+                    Text("Manual").tag(SortOrder.manual)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .tint(accentColor)
                 }
 
                 Spacer()
@@ -91,7 +98,8 @@ struct FileListView: View {
                 .buttonStyle(.borderless)
                 .disabled(viewModel.imageItems.isEmpty)
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .frame(height: footerHeight)
         }
         .background(Color(NSColor.controlBackgroundColor))
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in

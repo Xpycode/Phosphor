@@ -6,10 +6,20 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct ContentView: View {
     @StateObject private var viewModel = AppViewModel()
     @AppStorage("prefersLightMode") private var prefersLightMode = false
+    @AppStorage("useOrangeAccent") private var useOrangeAccent = false
+
+    private var activeAccentColor: Color {
+        if useOrangeAccent {
+            return Color.orange
+        } else {
+            return Color(nsColor: NSColor.controlAccentColor)
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,6 +41,7 @@ struct ContentView: View {
         }
         .frame(minWidth: 1000, minHeight: 630)
         .preferredColorScheme(prefersLightMode ? .light : .dark)
+        .accentColor(activeAccentColor)
     }
 }
 

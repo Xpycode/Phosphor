@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
+import CoreGraphics
 
 struct ImageItem: Identifiable, Equatable {
     let id = UUID()
@@ -82,18 +83,57 @@ struct ImageItem: Identifiable, Equatable {
 }
 
 extension NSImage {
-    func resized(to newSize: CGSize) -> NSImage {
-        let ratio = min(newSize.width / size.width, newSize.height / size.height)
-        let targetSize = CGSize(width: size.width * ratio, height: size.height * ratio)
+    func resized(
+        to targetSize: CGSize,
+        preservingAspectRatio: Bool = true
+    ) -> NSImage {
+        guard let sourceCGImage = cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            return self
+        }
 
-        let newImage = NSImage(size: targetSize)
-        newImage.lockFocus()
+        let clampedSize = CGSize(
+            width: max(targetSize.width, 1),
+            height: max(targetSize.height, 1)
+        )
 
-        let rect = NSRect(origin: .zero, size: targetSize)
-        draw(in: rect, from: NSRect(origin: .zero, size: size), operation: .copy, fraction: 1.0)
+        let resolvedSize: CGSize
+        if preservingAspectRatio {
+            let widthRatio = clampedSize.width / size.width
+            let heightRatio = clampedSize.height / size.height
+            let ratio = min(widthRatio, heightRatio)
+            resolvedSize = CGSize(
+                width: max(size.width * ratio, 1),
+                height: max(size.height * ratio, 1)
+            )
+        } else {
+            resolvedSize = clampedSize
+        }
 
-        newImage.unlockFocus()
-        return newImage
+        let pixelWidth = max(Int(resolvedSize.width.rounded()), 1)
+        let pixelHeight = max(Int(resolvedSize.height.rounded()), 1)
+        let finalSize = CGSize(width: CGFloat(pixelWidth), height: CGFloat(pixelHeight))
+
+        let colorSpace = sourceCGImage.colorSpace ?? CGColorSpaceCreateDeviceRGB()
+        guard let context = CGContext(
+            data: nil,
+            width: pixelWidth,
+            height: pixelHeight,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return self
+        }
+
+        context.interpolationQuality = .high
+        context.draw(sourceCGImage, in: CGRect(origin: .zero, size: finalSize))
+
+        guard let scaledCGImage = context.makeImage() else {
+            return self
+        }
+
+        return NSImage(cgImage: scaledCGImage, size: finalSize)
     }
 }
 

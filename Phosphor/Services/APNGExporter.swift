@@ -16,6 +16,7 @@ struct APNGExporter {
         to url: URL,
         frameDelay: Double,
         loopCount: Int,
+        resizeConfiguration: ExportResizeConfiguration?,
         progressHandler: @escaping (Double) -> Void
     ) async throws {
         guard !images.isEmpty else {
@@ -49,8 +50,18 @@ struct APNGExporter {
 
         // Process each image
         for (index, item) in images.enumerated() {
-            guard let nsImage = NSImage(contentsOf: item.url),
-                  let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            guard var nsImage = NSImage(contentsOf: item.url) else {
+                throw ExportError.failedToCreateImage
+            }
+
+            if let resizeConfiguration = resizeConfiguration {
+                nsImage = nsImage.resized(
+                    to: resizeConfiguration.targetSize,
+                    preservingAspectRatio: resizeConfiguration.preserveAspectRatio
+                )
+            }
+
+            guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
                 throw ExportError.failedToCreateImage
             }
 

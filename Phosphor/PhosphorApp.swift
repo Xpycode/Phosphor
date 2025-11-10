@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct PhosphorApp: App {
     @AppStorage("prefersLightMode") private var prefersLightMode = false
+    @AppStorage("useOrangeAccent") private var useOrangeAccent = false
 
     var body: some Scene {
         WindowGroup {
@@ -30,6 +31,11 @@ struct PhosphorApp: App {
                 }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
                 .disabled(prefersLightMode)
+
+                Divider()
+
+                Toggle("Use Orange Accent", isOn: $useOrangeAccent)
+                    .keyboardShortcut("o", modifiers: [.command, .shift])
 
                 Divider()
             }

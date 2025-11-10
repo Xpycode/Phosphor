@@ -15,6 +15,7 @@ struct WebPExporter {
         frameDelay: Double,
         loopCount: Int,
         quality: Double,
+        resizeConfiguration _: ExportResizeConfiguration?,
         progressHandler: @escaping (Double) -> Void
     ) async throws {
         guard !images.isEmpty else {
