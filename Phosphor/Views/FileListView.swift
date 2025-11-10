@@ -77,29 +77,53 @@ struct FileListView: View {
 
             Divider()
 
-            // Bottom Toolbar
-            HStack {
-                Button(action: importImages) {
-                    Label("Add Images", systemImage: "plus")
+            // Bottom Toolbar / Import Progress
+            if viewModel.isImporting {
+                VStack(spacing: 6) {
+                    HStack(spacing: 8) {
+                        ProgressView(value: viewModel.importProgress)
+                            .progressViewStyle(.linear)
+
+                        Button(action: viewModel.cancelImport) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.body)
+                        }
+                        .buttonStyle(.plain)
+                        .frame(height: 20, alignment: .center)
+                        .help("Cancel import")
+                    }
+
+                    Text("Importing images… \(Int(viewModel.importProgress * 100))%")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .buttonStyle(.borderless)
+                .padding(.horizontal, 16)
+                .frame(height: footerHeight)
+            } else {
+                HStack {
+                    Button(action: importImages) {
+                        Label("Add Images", systemImage: "plus")
+                    }
+                    .buttonStyle(.borderless)
 
-                Spacer()
+                    Spacer()
 
-                Text("\(viewModel.sortedImages.count) items")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    Text("\(viewModel.sortedImages.count) items")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                Spacer()
+                    Spacer()
 
-                Button(action: viewModel.clearAll) {
-                    Label("Clear All", systemImage: "trash")
+                    Button(action: viewModel.clearAll) {
+                        Label("Clear All", systemImage: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .disabled(viewModel.imageItems.isEmpty)
                 }
-                .buttonStyle(.borderless)
-                .disabled(viewModel.imageItems.isEmpty)
+                .padding(.horizontal, 16)
+                .frame(height: footerHeight)
             }
-            .padding(.horizontal, 16)
-            .frame(height: footerHeight)
         }
         .background(Color(NSColor.controlBackgroundColor))
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in

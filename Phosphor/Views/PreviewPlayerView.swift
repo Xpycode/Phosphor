@@ -56,13 +56,7 @@ struct PreviewPlayerView: View {
             Divider()
 
             // Controls
-            VStack(spacing: 8) {
-                if viewModel.totalFrames > 0 {
-                    Text("Frame \(viewModel.currentFrameIndex + 1) of \(viewModel.totalFrames)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
+            VStack(spacing: 4) {
                 // Scrubber
                 if viewModel.totalFrames > 1 {
                     HStack(spacing: 8) {
@@ -86,6 +80,7 @@ struct PreviewPlayerView: View {
                             .foregroundStyle(.secondary)
                             .frame(width: 30, alignment: .leading)
                     }
+                    .padding(.top, 4)
                 } else if viewModel.totalFrames == 1 {
                     HStack {
                         Spacer()
@@ -97,10 +92,10 @@ struct PreviewPlayerView: View {
                 }
 
                 // Playback Controls
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     Button(action: viewModel.previousFrame) {
                         Image(systemName: "backward")
-                            .font(.title2)
+                            .font(.title3)
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.totalFrames <= 1)
@@ -108,8 +103,8 @@ struct PreviewPlayerView: View {
 
                     Button(action: viewModel.togglePlayback) {
                         Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 32, weight: .semibold))
-                            .frame(width: 48, height: 48)
+                            .font(.system(size: 24, weight: .semibold))
+                            .frame(width: 38, height: 38)
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.totalFrames <= 1)
@@ -117,7 +112,7 @@ struct PreviewPlayerView: View {
 
                     Button(action: viewModel.nextFrame) {
                         Image(systemName: "forward")
-                            .font(.title2)
+                            .font(.title3)
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.totalFrames <= 1)

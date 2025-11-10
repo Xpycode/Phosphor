@@ -18,6 +18,10 @@ class AppViewModel: ObservableObject {
     @Published var isExporting = false
     @Published var exportProgress: Double = 0.0
     @Published var exportCompletionDate: Date?
+    @Published var isImporting = false
+    @Published var importProgress: Double = 0.0
+    @Published var importTaskID = UUID()
+    private var currentImportTask: Task<Void, Never>?
 
     private var playbackTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -80,18 +84,78 @@ class AppViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] newOrder in
                 guard let self = self else { return }
-                if newOrder == .manual {
-                    self.applyAutomaticSort(order: self.lastAutomaticSortOrder)
-                } else {
-                    self.lastAutomaticSortOrder = newOrder
+                DispatchQueue.main.async {
+                    if newOrder == .manual {
+                        self.applyAutomaticSort(order: self.lastAutomaticSortOrder)
+                    } else {
+                        self.lastAutomaticSortOrder = newOrder
+                    }
                 }
             }
             .store(in: &cancellables)
     }
 
     func addImages(from urls: [URL]) {
-        let newItems = urls.compactMap { ImageItem.from(url: $0) }
-        imageItems.append(contentsOf: newItems)
+        guard !urls.isEmpty else { return }
+
+        isImporting = true
+        importProgress = 0.0
+
+        currentImportTask?.cancel()
+
+        let taskID = UUID()
+        importTaskID = taskID
+
+        currentImportTask = Task(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return }
+            let urlsCopy = urls
+            var importBuffer: [ImageItem] = []
+            let total = urlsCopy.count
+
+            for (index, url) in urlsCopy.enumerated() {
+                if Task.isCancelled { break }
+
+                autoreleasepool {
+                    if let item = ImageItem.from(url: url) {
+                        importBuffer.append(item)
+                    }
+                }
+
+                if importBuffer.count == 8 || index == urlsCopy.count - 1 || Task.isCancelled {
+                    let flushedItems = importBuffer
+                    importBuffer.removeAll(keepingCapacity: true)
+
+                    await MainActor.run {
+                        if self.importTaskID == taskID {
+                            self.imageItems.append(contentsOf: flushedItems)
+                            self.importProgress = Double(index + 1) / Double(max(total, 1))
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        if self.importTaskID == taskID {
+                            self.importProgress = Double(index + 1) / Double(max(total, 1))
+                        }
+                    }
+                }
+            }
+
+            await MainActor.run {
+                if self.importTaskID == taskID {
+                    self.importProgress = 0.0
+                    self.isImporting = false
+                    self.currentImportTask = nil
+                }
+            }
+        }
+    }
+
+    func cancelImport() {
+        currentImportTask?.cancel()
+        currentImportTask = nil
+        importTaskID = UUID()
+        importProgress = 0.0
+        isImporting = false
     }
 
     func removeImage(_ item: ImageItem) {
