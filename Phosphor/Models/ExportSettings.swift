@@ -44,6 +44,11 @@ enum ResizeMode: String, CaseIterable {
     case custom
 }
 
+enum ResizeInstruction {
+    case scale(percent: Double)
+    case exact(size: CGSize, maintainAspect: Bool, cropToDominantAspect: Bool)
+}
+
 struct ResizePresetOption: Identifiable {
     let id: String
     let label: String
@@ -147,11 +152,6 @@ extension ExportPlatformPreset {
     }
 }
 
-struct ExportResizeConfiguration {
-    let targetSize: CGSize
-    let preserveAspectRatio: Bool
-}
-
 class ExportSettings: ObservableObject {
     @Published var format: ExportFormat = .gif
     @Published var frameDelay: Double = 100 // milliseconds
@@ -174,6 +174,8 @@ class ExportSettings: ObservableObject {
     @Published var colorDepthEnabled: Bool = false
     @Published var colorDepthLevels: Double = 16 // corresponds to CIColorPosterize levels
     @Published var overrideCustomFrameTimings: Bool = false
+    @Published var resizeScalePercent: Double = 100
+    @Published var cropOutliersToDominantAspect: Bool = true
 
     private var isUpdating = false
 
@@ -221,21 +223,21 @@ class ExportSettings: ObservableObject {
         min(max(value.rounded(), ExportConstants.frameRateRange.lowerBound), ExportConstants.frameRateRange.upperBound)
     }
 
-    var activeResizeConfiguration: ExportResizeConfiguration? {
+    var resizeInstruction: ResizeInstruction? {
         guard resizeEnabled else { return nil }
-        let width = max(1, resizeWidth)
-        let height = max(1, resizeHeight)
-        let size = CGSize(width: CGFloat(width), height: CGFloat(height))
-        let shouldPreserve: Bool
-        if resizeMode == .common {
-            shouldPreserve = true
-        } else {
-            shouldPreserve = maintainAspectRatio
+        switch resizeMode {
+        case .common:
+            return .scale(percent: resizeScalePercent)
+        case .custom:
+            let width = max(1, resizeWidth)
+            let height = max(1, resizeHeight)
+            let size = CGSize(width: CGFloat(width), height: CGFloat(height))
+            return .exact(
+                size: size,
+                maintainAspect: maintainAspectRatio,
+                cropToDominantAspect: cropOutliersToDominantAspect
+            )
         }
-        return ExportResizeConfiguration(
-            targetSize: size,
-            preserveAspectRatio: shouldPreserve
-        )
     }
 
     var effectiveFrameSkipInterval: Int {

@@ -16,7 +16,8 @@ struct APNGExporter {
         to url: URL,
         frameDelay: Double,
         loopCount: Int,
-        resizeConfiguration: ExportResizeConfiguration?,
+        resizeInstruction: ResizeInstruction?,
+        dominantAspectRatio: Double?,
         perFrameDelays: [Double]?,
         progressHandler: @escaping (Double) -> Void
     ) async throws {
@@ -48,11 +49,8 @@ struct APNGExporter {
                 throw ExportError.failedToCreateImage
             }
 
-            if let resizeConfiguration = resizeConfiguration {
-                nsImage = nsImage.resized(
-                    to: resizeConfiguration.targetSize,
-                    preservingAspectRatio: resizeConfiguration.preserveAspectRatio
-                )
+            if let resizeInstruction = resizeInstruction {
+                nsImage = nsImage.resized(using: resizeInstruction, dominantAspectRatio: dominantAspectRatio)
             }
 
             guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {

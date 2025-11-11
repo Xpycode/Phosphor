@@ -29,7 +29,7 @@ struct SettingsPanelView: View {
     }
 
     var body: some View {
-        let presetOptions = ResizePresetOption.presets(for: viewModel.settings.format)
+        let currentFrame = viewModel.currentImageItem
 
         return VStack(spacing: 0) {
             Text("Export")
@@ -50,7 +50,7 @@ struct SettingsPanelView: View {
 
             Group {
                 if selectedExportTab == .basic {
-                    basicSettingsContent(presetOptions: presetOptions)
+                    basicSettingsContent(currentFrame: currentFrame)
                 } else {
                     advancedSettingsContent
                 }
@@ -70,28 +70,8 @@ struct SettingsPanelView: View {
         }
         .onChange(of: viewModel.settings.format) { _, newValue in
             DispatchQueue.main.async {
-                syncPresetSelectionWithFormat()
                 if newValue != .gif {
                     viewModel.settings.colorDepthEnabled = false
-                }
-            }
-        }
-        .onChange(of: viewModel.settings.selectedResizePresetID) { _, _ in
-            DispatchQueue.main.async {
-                applySelectedPresetIfNeeded()
-            }
-        }
-        .onChange(of: viewModel.settings.resizeMode) { _, newValue in
-            if newValue == .common {
-                DispatchQueue.main.async {
-                    syncPresetSelectionWithFormat()
-                }
-            }
-        }
-        .onChange(of: viewModel.settings.resizeEnabled) { _, newValue in
-            if newValue && viewModel.settings.resizeMode == .common {
-                DispatchQueue.main.async {
-                    syncPresetSelectionWithFormat()
                 }
             }
         }
@@ -128,7 +108,7 @@ struct SettingsPanelView: View {
         .padding(.vertical, 6)
     }
 
-    private func basicSettingsContent(presetOptions: [ResizePresetOption]) -> some View {
+    private func basicSettingsContent(currentFrame: ImageItem?) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 GroupBox {
@@ -280,32 +260,62 @@ struct SettingsPanelView: View {
 
                         if viewModel.settings.resizeEnabled {
                             Picker("", selection: $viewModel.settings.resizeMode) {
-                                Text("Common").tag(ResizeMode.common)
-                                Text("Custom").tag(ResizeMode.custom)
+                                Text("Scale").tag(ResizeMode.common)
+                                Text("Exact").tag(ResizeMode.custom)
                             }
                             .pickerStyle(.segmented)
-                            .frame(width: 180)
+                            .frame(width: 200)
                             .tint(accentColor)
 
                             if viewModel.settings.resizeMode == .common {
-                                if presetOptions.isEmpty {
-                                    Text("No presets for \(viewModel.settings.format.rawValue)")
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                } else {
-                                    Picker("Preset", selection: $viewModel.settings.selectedResizePresetID) {
-                                        ForEach(presetOptions) { preset in
-                                            Text(preset.displayLabel)
-                                                .tag(preset.id)
-                                        }
-                                    }
-                                    .labelsHidden()
-                                    .pickerStyle(.menu)
-                                    .frame(maxWidth: .infinity)
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Slider(
+                                        value: Binding(
+                                            get: { viewModel.settings.resizeScalePercent },
+                                            set: { value in
+                                                let snaps: [Double] = [10, 25, 50, 75, 100, 125, 150, 175, 200]
+                                                if let snap = snaps.min(by: { abs($0 - value) < abs($1 - value) }),
+                                                   abs(snap - value) <= 3 {
+                                                    viewModel.settings.resizeScalePercent = snap
+                                                } else {
+                                                    viewModel.settings.resizeScalePercent = min(max(value, 10), 200)
+                                                }
+                                            }
+                                        ),
+                                        in: 10...200,
+                                        step: 5
+                                    )
                                     .tint(accentColor)
+
+                                    HStack(spacing: 8) {
+                                        ForEach([10, 25, 50, 75, 100], id: \.self) { value in
+                                            Button("\(value)%") {
+                                                viewModel.settings.resizeScalePercent = Double(value)
+                                            }
+                                            .buttonStyle(.borderless)
+                                            .font(.caption2)
+                                        }
+                                        Spacer()
+                                        Text("\(Int(viewModel.settings.resizeScalePercent))%")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+
+                                    if let previewSize = viewModel.scaledSize(
+                                        for: viewModel.settings.resizeScalePercent,
+                                        relativeTo: currentFrame
+                                    ) {
+                                        Text("Current frame: \(Int(previewSize.width)) × \(Int(previewSize.height)) px")
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    } else {
+                                        Text("Scaling preserves each frame's aspect ratio.")
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                    }
                                 }
 
-                                Text("Presets lock the target width while keeping each frame's aspect ratio. Heights may vary per image.")
+                                Text("Scaling shrinks or enlarges every frame by the same percentage while keeping their shapes intact.")
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             } else {
@@ -328,9 +338,19 @@ struct SettingsPanelView: View {
 
                                     if viewModel.settings.maintainAspectRatio,
                                        let inferred = inferredHeight(for: viewModel.settings.resizeWidth) {
-                                        Text("≈ \(Int(inferred)) px tall based on the first image.")
+                                        Text("≈ \(Int(inferred)) px tall based on dominant aspect.")
                                             .font(.caption2)
                                             .foregroundStyle(.secondary)
+                                    }
+
+                                    if viewModel.settings.maintainAspectRatio,
+                                       viewModel.dominantAspectLabel != nil {
+                                        Toggle(
+                                            "Crop frames to match the dominant aspect",
+                                            isOn: $viewModel.settings.cropOutliersToDominantAspect
+                                        )
+                                        .font(.caption)
+                                        .tint(accentColor)
                                     }
                                 }
                             }
@@ -652,33 +672,6 @@ struct SettingsPanelView: View {
         viewModel.settings.resizeEnabled &&
         viewModel.settings.resizeMode == .custom &&
         viewModel.settings.maintainAspectRatio
-    }
-
-    private func applyPreset(_ preset: ResizePresetOption) {
-        viewModel.settings.resizeWidth = preset.width
-        viewModel.settings.resizeHeight = preset.height
-    }
-
-    private func syncPresetSelectionWithFormat() {
-        guard viewModel.settings.resizeMode == .common else { return }
-        let presets = ResizePresetOption.presets(for: viewModel.settings.format)
-        guard !presets.isEmpty else { return }
-
-        if let match = presets.first(where: { $0.id == viewModel.settings.selectedResizePresetID }) {
-            applyPreset(match)
-        } else if let first = presets.first {
-            viewModel.settings.selectedResizePresetID = first.id
-            applyPreset(first)
-        }
-    }
-
-    private func applySelectedPresetIfNeeded() {
-        guard viewModel.settings.resizeMode == .common else { return }
-        guard let preset = ResizePresetOption.preset(
-            for: viewModel.settings.format,
-            id: viewModel.settings.selectedResizePresetID
-        ) else { return }
-        applyPreset(preset)
     }
 
     private func formattedColorCount(for count: Int) -> String {

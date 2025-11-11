@@ -64,20 +64,44 @@ class AppViewModel: ObservableObject {
         exportCandidateImages.count
     }
 
+    private let aspectTolerance: Double = 0.02
+
+    var dominantAspectRatio: Double? {
+        let ratios = sortedImages.compactMap { $0.aspectRatioValue }
+        guard !ratios.isEmpty else { return nil }
+        var buckets: [(ratio: Double, count: Int)] = []
+        for ratio in ratios {
+            if let index = buckets.firstIndex(where: { abs($0.ratio - ratio) <= aspectTolerance }) {
+                buckets[index].count += 1
+            } else {
+                buckets.append((ratio, 1))
+            }
+        }
+        return buckets.max(by: { $0.count < $1.count })?.ratio
+    }
+
     var referenceAspectRatio: Double? {
-        guard let item = sortedImages.first else { return nil }
-        guard item.resolution.height > 0 else { return nil }
-        return Double(item.resolution.width / item.resolution.height)
+        if let dominantAspectRatio {
+            return dominantAspectRatio
+        }
+        return sortedImages.first?.aspectRatioValue
     }
 
     var hasMixedAspectRatios: Bool {
-        guard let reference = referenceAspectRatio else { return false }
-        let tolerance = 0.01
+        guard let target = referenceAspectRatio else { return false }
         return sortedImages.contains { item in
-            let height = max(item.resolution.height, 1)
-            let ratio = Double(item.resolution.width / height)
-            return abs(ratio - reference) > tolerance
+            guard let ratio = item.aspectRatioValue else { return false }
+            return abs(ratio - target) > aspectTolerance
         }
+    }
+
+    var dominantAspectLabel: String? {
+        guard let ratio = dominantAspectRatio else { return nil }
+        guard let sample = sortedImages.first(where: { item in
+            guard let value = item.aspectRatioValue else { return false }
+            return abs(value - ratio) <= aspectTolerance
+        }) else { return nil }
+        return sample.aspectRatioLabel
     }
 
     func delayForFrame(at index: Int) -> Double {
@@ -402,7 +426,8 @@ class AppViewModel: ObservableObject {
             throw ExportError.noImages
         }
 
-        let resizeConfiguration = settings.activeResizeConfiguration
+        let resizeInstruction = settings.resizeInstruction
+        let dominantAspectRatio = referenceAspectRatio
         let sizeLimitBytes = exportSizeLimitBytes
         let colorDepthLevels = settings.clampedColorDepthLevels
         let perFrameDelays = perFrameDelays(for: images)
@@ -416,7 +441,8 @@ class AppViewModel: ObservableObject {
                 loopCount: settings.loopCount,
                 quality: settings.quality,
                 dithering: settings.enableDithering,
-                resizeConfiguration: resizeConfiguration,
+                resizeInstruction: resizeInstruction,
+                dominantAspectRatio: dominantAspectRatio,
                 colorDepthLevels: colorDepthLevels > 0 ? colorDepthLevels : nil,
                 perFrameDelays: perFrameDelays,
                 progressHandler: { [weak self] progress in
@@ -432,7 +458,8 @@ class AppViewModel: ObservableObject {
                 frameDelay: settings.frameDelay / 1000.0,
                 loopCount: settings.loopCount,
                 quality: settings.quality,
-                resizeConfiguration: resizeConfiguration,
+                resizeInstruction: resizeInstruction,
+                dominantAspectRatio: dominantAspectRatio,
                 perFrameDelays: perFrameDelays,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor in
@@ -446,7 +473,8 @@ class AppViewModel: ObservableObject {
                 to: url,
                 frameDelay: settings.frameDelay / 1000.0,
                 loopCount: settings.loopCount,
-                resizeConfiguration: resizeConfiguration,
+                resizeInstruction: resizeInstruction,
+                dominantAspectRatio: dominantAspectRatio,
                 perFrameDelays: perFrameDelays,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor in
@@ -476,5 +504,24 @@ class AppViewModel: ObservableObject {
         case .manual:
             break
         }
+    }
+
+    func isAspectOutlier(_ item: ImageItem) -> Bool {
+        guard let target = referenceAspectRatio, let ratio = item.aspectRatioValue else { return false }
+        return abs(ratio - target) > aspectTolerance
+    }
+
+    func aspectRatioLabel(for item: ImageItem) -> String {
+        item.aspectRatioLabel
+    }
+
+    func scaledSize(for percent: Double, relativeTo item: ImageItem?) -> CGSize? {
+        let referenceItem = item ?? sortedImages.first
+        guard let referenceItem else { return nil }
+        let factor = max(percent, 1) / 100.0
+        let width = Double(referenceItem.resolution.width) * factor
+        let height = Double(referenceItem.resolution.height) * factor
+        guard width.isFinite, height.isFinite else { return nil }
+        return CGSize(width: max(width, 1), height: max(height, 1))
     }
 }

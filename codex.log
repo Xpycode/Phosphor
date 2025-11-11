@@ -9,3 +9,4 @@
 2025-11-09T14:10:29Z - Reimplemented manual sorting with custom drag/drop and width fix
 2025-11-09T14:10:29Z - Ensured manual mode inherits last auto sort order
 2025-11-09T14:10:29Z - Added async dispatch to avoid Publishing changes warning
+2025-11-09T14:12:00Z – TODO: FileListView thumbnails should render in a fixed 120x72 canvas (aspectRatio(.fit)) and metadata column should start at consistent offset (~130px) so rows align.

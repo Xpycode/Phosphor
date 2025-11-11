@@ -37,7 +37,7 @@ struct ContentView: View {
             HSplitView {
                 // Left Pane: File List
                 FileListView(viewModel: viewModel)
-                    .frame(minWidth: 340, idealWidth: 400, maxWidth: 440)
+                    .frame(minWidth: 360, idealWidth: 400, maxWidth: 440)
 
                 // Center Pane: Preview Player
                 PreviewPlayerView(viewModel: viewModel)
@@ -45,10 +45,10 @@ struct ContentView: View {
 
                 // Right Pane: Settings and Export
                 SettingsPanelView(viewModel: viewModel)
-                    .frame(minWidth: 340, idealWidth: 370, maxWidth: 400)
+                    .frame(minWidth: 360, idealWidth: 370, maxWidth: 400)
             }
         }
-        .frame(minWidth: 1040, minHeight: 800)
+        .frame(minWidth: 1080, minHeight: 800)
         .preferredColorScheme(prefersLightMode ? .light : .dark)
         .accentColor(activeAccentColor)
         .environment(\.appAccentColor, activeAccentColor)

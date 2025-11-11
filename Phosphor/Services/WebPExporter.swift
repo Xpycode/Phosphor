@@ -15,7 +15,8 @@ struct WebPExporter {
         frameDelay: Double,
         loopCount: Int,
         quality: Double,
-        resizeConfiguration _: ExportResizeConfiguration?,
+        resizeInstruction _: ResizeInstruction?,
+        dominantAspectRatio _: Double?,
         perFrameDelays _: [Double]?,
         progressHandler: @escaping (Double) -> Void
     ) async throws {

@@ -45,7 +45,8 @@ struct GIFExporter {
         loopCount: Int,
         quality: Double,
         dithering: Bool,
-        resizeConfiguration: ExportResizeConfiguration?,
+        resizeInstruction: ResizeInstruction?,
+        dominantAspectRatio: Double?,
         colorDepthLevels: Int?,
         perFrameDelays: [Double]?,
         progressHandler: @escaping (Double) -> Void
@@ -78,11 +79,8 @@ struct GIFExporter {
                 throw ExportError.failedToCreateImage
             }
 
-            if let resizeConfiguration = resizeConfiguration {
-                nsImage = nsImage.resized(
-                    to: resizeConfiguration.targetSize,
-                    preservingAspectRatio: resizeConfiguration.preserveAspectRatio
-                )
+            if let resizeInstruction = resizeInstruction {
+                nsImage = nsImage.resized(using: resizeInstruction, dominantAspectRatio: dominantAspectRatio)
             }
 
             if let levels = colorDepthLevels, levels > 0, let reduced = ColorDepthReducer.shared.applyingPosterize(to: nsImage, levels: levels) {

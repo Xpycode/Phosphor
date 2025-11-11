@@ -227,16 +227,8 @@ struct FileItemRow: View {
     let index: Int
     @ObservedObject var viewModel: AppViewModel
     var isManualMode: Bool = false
-    private let rowHeight: CGFloat = 72
-
-    private var thumbnailWidth: CGFloat {
-        let height = item.resolution.height
-        guard height > 0 else { return rowHeight }
-        let ratio = item.resolution.width / height
-        let width = rowHeight * CGFloat(ratio)
-        // Prevent extreme panoramas from taking over the row
-        return min(max(width, rowHeight * 0.6), rowHeight * 3)
-    }
+    private let thumbnailCanvasSize = CGSize(width: 120, height: 72)
+    private let rowHeight: CGFloat = 84
 
     var body: some View {
         HStack(spacing: 8) {
@@ -249,19 +241,7 @@ struct FileItemRow: View {
                 .opacity(isManualMode ? 1.0 : 0.6)
 
             // Thumbnail
-            if let thumbnail = item.thumbnail {
-                Image(nsImage: thumbnail)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: thumbnailWidth, height: rowHeight)
-                    .clipped()
-                    .cornerRadius(4)
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: thumbnailWidth, height: rowHeight)
-                    .cornerRadius(4)
-            }
+            thumbnailCanvas
 
             // File Info
             VStack(alignment: .leading, spacing: 4) {
@@ -277,7 +257,18 @@ struct FileItemRow: View {
                 }
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
+
+                let isOutlier = viewModel.isAspectOutlier(item)
+                HStack(spacing: 4) {
+                    Image(systemName: isOutlier ? "exclamationmark.triangle.fill" : "aspectratio")
+                        .font(.system(size: 9))
+                    Text("Aspect \(viewModel.aspectRatioLabel(for: item))")
+                        .font(.system(size: 10))
+                }
+                .foregroundColor(isOutlier ? .orange : .secondary)
+                .help(aspectHelpText(isOutlier: isOutlier))
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Spacer()
 
@@ -299,6 +290,52 @@ struct FileItemRow: View {
         .onTapGesture {
             viewModel.seekToFrame(index)
         }
+    }
+
+    private func aspectHelpText(isOutlier: Bool) -> String {
+        if isOutlier, let dominant = viewModel.dominantAspectLabel {
+            return "Dominant aspect \(dominant). This frame will be cropped to match."
+        } else {
+            return "Matches dominant aspect ratio."
+        }
+    }
+}
+
+private extension FileItemRow {
+    var thumbnailCanvas: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color.gray.opacity(0.12))
+
+            if let thumbnail = item.thumbnail {
+                let displaySize = thumbnailDisplaySize(for: thumbnail.size)
+                Image(nsImage: thumbnail)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: displaySize.width, height: displaySize.height)
+            } else {
+                Image(systemName: "photo")
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: thumbnailCanvasSize.width, height: thumbnailCanvasSize.height)
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
+    func thumbnailDisplaySize(for originalSize: CGSize) -> CGSize {
+        guard originalSize.width > 0, originalSize.height > 0 else {
+            return thumbnailCanvasSize
+        }
+
+        let widthScale = thumbnailCanvasSize.width / originalSize.width
+        let heightScale = thumbnailCanvasSize.height / originalSize.height
+        let scale = min(1, min(widthScale, heightScale))
+
+        return CGSize(
+            width: originalSize.width * scale,
+            height: originalSize.height * scale
+        )
     }
 }
 
