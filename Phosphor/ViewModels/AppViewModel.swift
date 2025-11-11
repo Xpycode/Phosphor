@@ -147,13 +147,22 @@ class AppViewModel: ObservableObject {
 
         var resizeFactor = 1.0
         if settings.resizeEnabled {
-            let averageArea = frames
-                .map { Double($0.resolution.width * $0.resolution.height) }
-                .reduce(0, +) / Double(frames.count)
-            if averageArea > 0 {
-                let targetArea = settings.resizeWidth * settings.resizeHeight
-                let ratio = targetArea / averageArea
-                resizeFactor = max(0.1, min(ratio, 1.0))
+            switch settings.resizeMode {
+            case .common:
+                let scalePercent = max(settings.resizeScalePercent, 1)
+                let scale = scalePercent / 100.0
+                // Area scales with square of the linear percentage
+                let areaRatio = scale * scale
+                resizeFactor = max(0.01, min(areaRatio, 1.0))
+            case .custom:
+                let averageArea = frames
+                    .map { Double($0.resolution.width * $0.resolution.height) }
+                    .reduce(0, +) / Double(frames.count)
+                if averageArea > 0 {
+                    let targetArea = settings.resizeWidth * settings.resizeHeight
+                    let ratio = targetArea / averageArea
+                    resizeFactor = max(0.1, min(ratio, 1.0))
+                }
             }
         }
 
@@ -220,10 +229,11 @@ class AppViewModel: ObservableObject {
                 guard let self = self else { return }
                 DispatchQueue.main.async {
                     if newOrder == .manual {
-                        self.applyAutomaticSort(order: self.lastAutomaticSortOrder)
-                    } else {
-                        self.lastAutomaticSortOrder = newOrder
+                        return
                     }
+
+                    self.lastAutomaticSortOrder = newOrder
+                    self.applyAutomaticSort(order: newOrder)
                 }
             }
             .store(in: &cancellables)
@@ -488,6 +498,7 @@ class AppViewModel: ObservableObject {
             let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
             let actualSize = (attributes[.size] as? NSNumber)?.int64Value ?? 0
             if actualSize > limit {
+                try? FileManager.default.removeItem(at: url)
                 throw ExportError.fileSizeLimitExceeded(maxBytes: limit, actualBytes: actualSize)
             }
         }

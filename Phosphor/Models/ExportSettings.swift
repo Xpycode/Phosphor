@@ -246,7 +246,8 @@ class ExportSettings: ObservableObject {
     }
 
     var maxFileSizeBytes: Int64 {
-        Int64(max(1, maxFileSizeMB) * 1024 * 1024)
+        let megabytes = max(0.01, maxFileSizeMB)
+        return Int64(megabytes * 1024 * 1024)
     }
 
     var clampedColorDepthLevels: Int {

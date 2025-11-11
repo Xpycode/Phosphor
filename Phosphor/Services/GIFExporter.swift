@@ -9,6 +9,7 @@ import Foundation
 import AppKit
 import ImageIO
 import UniformTypeIdentifiers
+import CoreImage
 
 enum ExportError: LocalizedError {
     case failedToCreateDestination
@@ -87,17 +88,24 @@ struct GIFExporter {
                 nsImage = reduced
             }
 
+            if dithering, let dithered = nsImage.applyingDither(intensity: 0.7) {
+                nsImage = dithered
+            }
+
             guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
                 throw ExportError.failedToCreateImage
             }
 
             let effectiveDelay = perFrameDelays?[index] ?? (frameDelay * 1000.0)
             let delaySeconds = max(0.01, effectiveDelay / 1000.0)
+            let gifFrameProperties: [String: Any] = [
+                kCGImagePropertyGIFDelayTime as String: delaySeconds,
+                kCGImagePropertyGIFUnclampedDelayTime as String: delaySeconds
+            ]
+
             let frameProperties: [String: Any] = [
-                kCGImagePropertyGIFDictionary as String: [
-                    kCGImagePropertyGIFDelayTime as String: delaySeconds,
-                    kCGImagePropertyGIFUnclampedDelayTime as String: delaySeconds
-                ]
+                kCGImageDestinationLossyCompressionQuality as String: max(0.0, min(1.0, quality)),
+                kCGImagePropertyGIFDictionary as String: gifFrameProperties
             ]
 
             CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
@@ -116,6 +124,8 @@ struct GIFExporter {
     }
 }
 
+private let gifExporterCIContext = CIContext(options: [.cacheIntermediates: true])
+
 extension NSImage {
     func cgImage(forProposedRect proposedDestRect: UnsafeMutablePointer<NSRect>?, context: NSGraphicsContext?, hints: [NSImageRep.HintKey: Any]?) -> CGImage? {
         guard let imageData = self.tiffRepresentation,
@@ -123,5 +133,25 @@ extension NSImage {
             return nil
         }
         return bitmap.cgImage
+    }
+
+    func applyingDither(intensity: Double) -> NSImage? {
+        guard let cgImage = cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            return nil
+        }
+
+        let ciImage = CIImage(cgImage: cgImage)
+        guard let filter = CIFilter(name: "CIDither") else { return nil }
+        filter.setValue(ciImage, forKey: kCIInputImageKey)
+        filter.setValue(intensity, forKey: "inputIntensity")
+
+        guard
+            let output = filter.outputImage,
+            let resultCGImage = gifExporterCIContext.createCGImage(output, from: output.extent)
+        else {
+            return nil
+        }
+
+        return NSImage(cgImage: resultCGImage, size: size)
     }
 }

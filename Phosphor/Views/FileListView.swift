@@ -12,8 +12,12 @@ struct FileListView: View {
     @ObservedObject var viewModel: AppViewModel
     @State private var isTargeted = false
     @State private var draggingItem: ImageItem?
-    @Environment(\.appAccentColor) private var accentColor
     private let footerHeight: CGFloat = 60
+    @AppStorage("useOrangeAccent") private var useOrangeAccent = false
+
+    private var accentColor: Color {
+        useOrangeAccent ? .orange : Color(nsColor: NSColor.controlAccentColor)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,6 +26,7 @@ struct FileListView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal)
+            // let frame hight stay at 24
                 .frame(height: 24)
 
             Divider()
@@ -29,6 +34,9 @@ struct FileListView: View {
             // Sort Order Picker
             HStack {
                 Spacer()
+
+                HStack(spacing: 8) {
+                   
 
                 Picker("", selection: $viewModel.settings.sortOrder) {
                     Text("File Name").tag(SortOrder.fileName)
@@ -38,6 +46,7 @@ struct FileListView: View {
                 .labelsHidden()
                 .pickerStyle(.segmented)
                 .tint(accentColor)
+                }
 
                 Spacer()
             }
@@ -164,31 +173,47 @@ struct FileListView: View {
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        let group = DispatchGroup()
+        guard !providers.isEmpty else { return false }
+
         var collectedURLs: [URL] = []
-        let lock = NSLock()
+        var completedProviders = 0
 
-        for provider in providers {
-            if provider.canLoadObject(ofClass: URL.self) {
-                group.enter()
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    if let url = url {
-                        lock.lock()
-                        collectedURLs.append(url)
-                        lock.unlock()
-                    }
-                    group.leave()
-                }
-            }
-        }
-
-        group.notify(queue: .main) { [viewModel] in
-            if !collectedURLs.isEmpty {
+        func finalizeIfNeeded() {
+            completedProviders += 1
+            if completedProviders == providers.count, !collectedURLs.isEmpty {
                 viewModel.addImages(from: collectedURLs)
             }
         }
 
+        for provider in providers {
+            guard provider.canLoadObject(ofClass: URL.self) else {
+                DispatchQueue.main.async {
+                    finalizeIfNeeded()
+                }
+                continue
+            }
+
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                DispatchQueue.main.async {
+                    if let url {
+                        collectedURLs.append(url)
+                    }
+                    finalizeIfNeeded()
+                }
+            }
+        }
+
         return true
+    }
+}
+
+private struct ClearListBackgroundModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 13.0, *) {
+            content.scrollContentBackground(.hidden)
+        } else {
+            content
+        }
     }
 }
 
@@ -336,6 +361,17 @@ private extension FileItemRow {
             width: originalSize.width * scale,
             height: originalSize.height * scale
         )
+    }
+}
+
+// MARK: - View Extension for Conditional Modifiers
+extension View {
+    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
     }
 }
 

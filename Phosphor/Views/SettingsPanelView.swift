@@ -10,22 +10,12 @@ import UniformTypeIdentifiers
 
 struct SettingsPanelView: View {
     @ObservedObject var viewModel: AppViewModel
-    @State private var lastFiniteLoopCount: Int
-    @State private var loopCountText: String
     @State private var selectedExportTab: ExportTab = .basic
     private let footerHeight: CGFloat = 60
     @AppStorage("useOrangeAccent") private var useOrangeAccent = false
 
     private var accentColor: Color {
         useOrangeAccent ? .orange : Color(nsColor: NSColor.controlAccentColor)
-    }
-
-    init(viewModel: AppViewModel) {
-        self._viewModel = ObservedObject(wrappedValue: viewModel)
-        let initialLoop = viewModel.settings.loopCount == 0 ? 1 : viewModel.settings.loopCount
-        let finiteLoop = max(1, initialLoop)
-        self._lastFiniteLoopCount = State(initialValue: finiteLoop)
-        self._loopCountText = State(initialValue: String(finiteLoop))
     }
 
     var body: some View {
@@ -61,13 +51,6 @@ struct SettingsPanelView: View {
             exportButton
         }
         .background(Color(NSColor.controlBackgroundColor))
-        .onChange(of: viewModel.settings.loopCount) { _, newValue in
-            if newValue != 0 {
-                let clamped = max(1, min(newValue, 100))
-                lastFiniteLoopCount = clamped
-                loopCountText = String(clamped)
-            }
-        }
         .onChange(of: viewModel.settings.format) { _, newValue in
             DispatchQueue.main.async {
                 if newValue != .gif {
@@ -111,113 +94,6 @@ struct SettingsPanelView: View {
     private func basicSettingsContent(currentFrame: ImageItem?) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                GroupBox {
-                    VStack(alignment: .leading, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text("Frame Rate")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Text("\(Int(viewModel.settings.frameRate)) FPS")
-                                    .font(.caption.monospacedDigit())
-                            }
-
-                            Slider(
-                                value: steppedBinding(
-                                    $viewModel.settings.frameRate,
-                                    step: 1.0,
-                                    range: 1.0...60.0
-                                ),
-                                in: 1.0...60.0
-                            )
-                            .controlSize(.regular)
-                            .tint(accentColor)
-                        }
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text("Frame Delay")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Text("\(String(format: "%.0f", viewModel.settings.frameDelay)) ms / \(String(format: "%.1f", viewModel.settings.frameDelay / 10.0)) cs")
-                                    .font(.caption.monospacedDigit())
-                            }
-
-                            Slider(
-                                value: steppedBinding(
-                                    $viewModel.settings.frameDelay,
-                                    step: 1,
-                                    range: (1000.0 / 60.0)...1000.0
-                                ),
-                                in: (1000.0 / 60.0)...1000.0
-                            )
-                            .controlSize(.regular)
-                            .tint(accentColor)
-
-                            if viewModel.hasCustomFrameDelays {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Custom frame timings are active. Changes here affect only untimed frames unless you override them.")
-                                        .font(.caption2)
-                                        .foregroundColor(viewModel.settings.overrideCustomFrameTimings ? .secondary : .orange)
-
-                                    Toggle("Apply slider to custom frames", isOn: $viewModel.settings.overrideCustomFrameTimings)
-                                        .font(.caption2)
-                                        .tint(accentColor)
-                                }
-                                .padding(.top, 4)
-                            }
-                        }
-                    }
-                    .padding(10)
-                } label: {
-                    EmptyView()
-                }
-
-                GroupBox {
-                    HStack(spacing: 12) {
-                        Text("Loop Count")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Spacer()
-
-                        Text("Infinite")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-
-                        Toggle("", isOn: Binding(
-                            get: { viewModel.settings.loopCount == 0 },
-                            set: { isInfinite in
-                                if isInfinite {
-                                    if viewModel.settings.loopCount != 0 {
-                                        lastFiniteLoopCount = max(1, viewModel.settings.loopCount)
-                                        loopCountText = String(lastFiniteLoopCount)
-                                    }
-                                    viewModel.settings.loopCount = 0
-                                } else {
-                                    viewModel.settings.loopCount = lastFiniteLoopCount
-                                }
-                            }
-                        ))
-                        .toggleStyle(AccentSwitchToggleStyle(accent: accentColor))
-
-                        TextField(
-                            "",
-                            text: loopCountTextBinding
-                        )
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 48)
-                        .disabled(viewModel.settings.loopCount == 0)
-                    }
-                    .padding(10)
-                } label: {
-                    EmptyView()
-                }
-
                 GroupBox {
                     VStack(alignment: .leading, spacing: 12) {
                         VStack(alignment: .leading, spacing: 6) {
@@ -755,27 +631,6 @@ struct SettingsPanelView: View {
         )
     }
 
-    private var loopCountTextBinding: Binding<String> {
-        Binding(
-            get: {
-                loopCountText
-            },
-            set: { newValue in
-                let filtered = newValue.filter(\.isNumber)
-                loopCountText = filtered
-
-                guard let value = Int(filtered) else { return }
-
-                let clamped = max(1, min(value, 100))
-                lastFiniteLoopCount = clamped
-
-                if viewModel.settings.loopCount != 0 {
-                    viewModel.settings.loopCount = clamped
-                }
-            }
-        )
-    }
-
     private var frameSkipIntervalBinding: Binding<Int> {
         Binding(
             get: {
@@ -861,31 +716,6 @@ private extension SettingsPanelView {
         guard let ratio = viewModel.referenceAspectRatio, ratio > 0 else { return nil }
         let height = width / ratio
         return height.isFinite ? height : nil
-    }
-}
-
-private struct AccentSwitchToggleStyle: ToggleStyle {
-    var accent: Color
-
-    func makeBody(configuration: Configuration) -> some View {
-        Button {
-            configuration.isOn.toggle()
-        } label: {
-            ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                Capsule()
-                    .fill(configuration.isOn ? accent : Color.secondary.opacity(0.35))
-                    .frame(width: 44, height: 22)
-
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 18, height: 18)
-                    .padding(.horizontal, 2)
-                    .shadow(color: Color.black.opacity(0.2), radius: 1, y: 1)
-            }
-            .animation(.easeInOut(duration: 0.15), value: configuration.isOn)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(configuration.isOn ? "On" : "Off")
     }
 }
 
