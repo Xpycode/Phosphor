@@ -84,11 +84,12 @@ struct GIFExporter {
                 nsImage = nsImage.resized(using: resizeInstruction, dominantAspectRatio: dominantAspectRatio)
             }
 
-            if let levels = colorDepthLevels, levels > 0, let reduced = ColorDepthReducer.shared.applyingPosterize(to: nsImage, levels: levels) {
+            let paletteLevels = colorDepthLevels ?? 0
+            if paletteLevels > 0, let reduced = ColorDepthReducer.shared.applyingPosterize(to: nsImage, levels: paletteLevels) {
                 nsImage = reduced
             }
 
-            if dithering, let dithered = nsImage.applyingDither(intensity: 0.7) {
+            if dithering, paletteLevels > 0, let dithered = nsImage.applyingDither(intensity: GIFExporter.defaultDitherIntensity) {
                 nsImage = dithered
             }
 
@@ -96,8 +97,12 @@ struct GIFExporter {
                 throw ExportError.failedToCreateImage
             }
 
-            let effectiveDelay = perFrameDelays?[index] ?? (frameDelay * 1000.0)
-            let delaySeconds = max(0.01, effectiveDelay / 1000.0)
+            let delaySeconds: Double
+            if let overrides = perFrameDelays, index < overrides.count {
+                delaySeconds = max(0.01, overrides[index] / 1000.0)
+            } else {
+                delaySeconds = max(0.01, frameDelay)
+            }
             let gifFrameProperties: [String: Any] = [
                 kCGImagePropertyGIFDelayTime as String: delaySeconds,
                 kCGImagePropertyGIFUnclampedDelayTime as String: delaySeconds
@@ -125,6 +130,9 @@ struct GIFExporter {
 }
 
 private let gifExporterCIContext = CIContext(options: [.cacheIntermediates: true])
+private extension GIFExporter {
+    static let defaultDitherIntensity = 0.2
+}
 
 extension NSImage {
     func cgImage(forProposedRect proposedDestRect: UnsafeMutablePointer<NSRect>?, context: NSGraphicsContext?, hints: [NSImageRep.HintKey: Any]?) -> CGImage? {

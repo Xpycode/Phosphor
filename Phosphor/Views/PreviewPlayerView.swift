@@ -34,7 +34,7 @@ struct PreviewPlayerView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal)
-            // let frame hight stay at 24
+            // let frame height stay at 24
                 .frame(height: 24)
 
             Divider()

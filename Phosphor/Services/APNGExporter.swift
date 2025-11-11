@@ -57,8 +57,12 @@ struct APNGExporter {
                 throw ExportError.failedToCreateImage
             }
 
-            let effectiveDelay = perFrameDelays?[index] ?? (frameDelay * 1000.0)
-            let delaySeconds = max(0.01, effectiveDelay / 1000.0)
+            let delaySeconds: Double
+            if let overrides = perFrameDelays, index < overrides.count {
+                delaySeconds = max(0.01, overrides[index] / 1000.0)
+            } else {
+                delaySeconds = max(0.01, frameDelay)
+            }
             let frameProperties: [String: Any] = [
                 kCGImagePropertyPNGDictionary as String: [
                     kCGImagePropertyAPNGDelayTime as String: delaySeconds

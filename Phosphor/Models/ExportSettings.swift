@@ -24,6 +24,14 @@ enum ExportFormat: String, CaseIterable {
     case webp = "WebP"
     case apng = "APNG"
 
+    static var implementedFormats: [ExportFormat] {
+        allCases.filter { $0 != .webp }
+    }
+
+    var isImplemented: Bool {
+        self != .webp
+    }
+
     var fileExtension: String {
         switch self {
         case .gif: return "gif"

@@ -23,6 +23,7 @@ class AppViewModel: ObservableObject {
     @Published var importTaskID = UUID()
     @Published var customFrameDelays: [UUID: Double] = [:] // ms override per frame
     private var currentImportTask: Task<Void, Never>?
+    private let importFlushBatchSize = 8 // small batches keep memory low while smoothing progress updates
 
     private var playbackTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -265,7 +266,7 @@ class AppViewModel: ObservableObject {
                     }
                 }
 
-                if importBuffer.count == 8 || index == urlsCopy.count - 1 || Task.isCancelled {
+                if importBuffer.count == importFlushBatchSize || index == urlsCopy.count - 1 || Task.isCancelled {
                     let flushedItems = importBuffer
                     importBuffer.removeAll(keepingCapacity: true)
 
@@ -305,8 +306,11 @@ class AppViewModel: ObservableObject {
     func removeImage(_ item: ImageItem) {
         imageItems.removeAll { $0.id == item.id }
         customFrameDelays.removeValue(forKey: item.id)
-        if currentFrameIndex >= imageItems.count && currentFrameIndex > 0 {
-            currentFrameIndex = imageItems.count - 1
+        let visibleCount = sortedImages.count
+        if visibleCount == 0 {
+            currentFrameIndex = 0
+        } else if currentFrameIndex >= visibleCount {
+            currentFrameIndex = max(visibleCount - 1, 0)
         }
     }
 

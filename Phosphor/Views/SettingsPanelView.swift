@@ -78,15 +78,35 @@ struct SettingsPanelView: View {
     }
 
     private var formatPickerSection: some View {
-        Picker("", selection: $viewModel.settings.format) {
-            ForEach(ExportFormat.allCases, id: \.self) { format in
-                Text(format.rawValue).tag(format)
+        let selection = Binding<ExportFormat>(
+            get: {
+                if viewModel.settings.format.isImplemented {
+                    return viewModel.settings.format
+                } else {
+                    DispatchQueue.main.async {
+                        viewModel.settings.format = .gif
+                    }
+                    return .gif
+                }
+            },
+            set: { viewModel.settings.format = $0 }
+        )
+
+        return VStack(spacing: 4) {
+            Picker("", selection: selection) {
+                ForEach(ExportFormat.implementedFormats, id: \.self) { format in
+                    Text(format.rawValue).tag(format)
+                }
             }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(maxWidth: .infinity)
+            .tint(accentColor)
+
+            Text("WebP export is temporarily unavailable.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
-        .labelsHidden()
-        .pickerStyle(.segmented)
-        .frame(maxWidth: .infinity)
-        .tint(accentColor)
         .padding(.horizontal)
         .padding(.vertical, 6)
     }
