@@ -11,6 +11,7 @@ import Combine
 
 @MainActor
 class AppViewModel: ObservableObject {
+    // MARK: - Legacy Properties (for backward compatibility)
     @Published var imageItems: [ImageItem] = []
     @Published var settings = ExportSettings()
     @Published var isPlaying = false
@@ -28,6 +29,10 @@ class AppViewModel: ObservableObject {
     private var playbackTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
     private var lastAutomaticSortOrder: SortOrder = .fileName
+
+    // Image cache to avoid reloading images every frame
+    private var imageCache: [UUID: NSImage] = [:]
+    private let maxCacheSize = 50 // Keep last 50 images in memory
 
     var sortedImages: [ImageItem] {
         switch settings.sortOrder {
@@ -47,7 +52,25 @@ class AppViewModel: ObservableObject {
 
     var currentImage: NSImage? {
         guard !sortedImages.isEmpty, currentFrameIndex < sortedImages.count else { return nil }
-        return NSImage.loadedNormalizingOrientation(from: sortedImages[currentFrameIndex].url)
+        let item = sortedImages[currentFrameIndex]
+
+        // Check cache first
+        if let cached = imageCache[item.id] {
+            return cached
+        }
+
+        // Load and cache
+        guard let image = NSImage.loadedNormalizingOrientation(from: item.url) else { return nil }
+
+        // Manage cache size
+        if imageCache.count >= maxCacheSize {
+            // Remove oldest entries (simple FIFO)
+            let keysToRemove = Array(imageCache.keys.prefix(10))
+            keysToRemove.forEach { imageCache.removeValue(forKey: $0) }
+        }
+
+        imageCache[item.id] = image
+        return image
     }
 
     var totalFrames: Int {
@@ -56,6 +79,7 @@ class AppViewModel: ObservableObject {
 
     var exportCandidateImages: [ImageItem] {
         let interval = settings.effectiveFrameSkipInterval
+        guard interval > 0 else { return sortedImages }
         guard interval > 1 else { return sortedImages }
         guard !sortedImages.isEmpty else { return [] }
         return stride(from: 0, to: sortedImages.count, by: interval).map { sortedImages[$0] }
@@ -305,6 +329,7 @@ class AppViewModel: ObservableObject {
     func removeImage(_ item: ImageItem) {
         imageItems.removeAll { $0.id == item.id }
         customFrameDelays.removeValue(forKey: item.id)
+        imageCache.removeValue(forKey: item.id)
         let visibleCount = sortedImages.count
         if visibleCount == 0 {
             currentFrameIndex = 0
@@ -316,6 +341,7 @@ class AppViewModel: ObservableObject {
 
     func clearAll() {
         imageItems.removeAll()
+        imageCache.removeAll()
         currentFrameIndex = 0
         stopPlayback()
         customFrameDelays.removeAll()

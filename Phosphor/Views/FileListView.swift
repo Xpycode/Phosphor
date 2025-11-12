@@ -125,15 +125,16 @@ struct FileListView: View {
                 .frame(height: footerHeight)
             }
         }
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color(NSColor.windowBackgroundColor).opacity(1.0))
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
             handleDrop(providers: providers)
         }
         .overlay {
             if isTargeted {
                 RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color.accentColor, lineWidth: 2)
+                    .strokeBorder(accentColor, lineWidth: 3)
                     .padding(4)
+                    .background(accentColor.opacity(0.05))
             }
         }
     }

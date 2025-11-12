@@ -149,7 +149,7 @@ struct PreviewPlayerView: View {
                 .padding(.horizontal, 16)
                 .frame(height: footerHeight)
         }
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color(NSColor.windowBackgroundColor))
         .onChange(of: viewModel.settings.loopCount) { _, newValue in
             if newValue != 0 {
                 let clamped = max(1, min(newValue, 100))

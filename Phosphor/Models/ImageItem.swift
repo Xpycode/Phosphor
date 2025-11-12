@@ -69,51 +69,50 @@ struct ImageItem: Identifiable, Equatable {
 
     static func from(url: URL) -> ImageItem? {
         guard isSupported(url: url) else { return nil }
-        guard let image = NSImage.loadedNormalizingOrientation(from: url) else { return nil }
 
-        // Get file attributes
-        var fileSize: Int64 = 0
-        var modificationDate = Date()
+        return autoreleasepool {
+            guard let image = NSImage.loadedNormalizingOrientation(from: url) else { return nil }
 
-        if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path) {
-            fileSize = attributes[.size] as? Int64 ?? 0
-            modificationDate = attributes[.modificationDate] as? Date ?? Date()
+            // Get file attributes
+            var fileSize: Int64 = 0
+            var modificationDate = Date()
+
+            if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path) {
+                fileSize = attributes[.size] as? Int64 ?? 0
+                modificationDate = attributes[.modificationDate] as? Date ?? Date()
+            }
+
+            // Get image resolution
+            let resolution = image.size
+
+            // Create thumbnail sized to match the list canvas (no upscaling later)
+            let thumbnailSize = CGSize(width: 120, height: 72)
+            let thumbnail = image.resized(to: thumbnailSize)
+
+            return ImageItem(
+                url: url,
+                thumbnail: thumbnail,
+                resolution: resolution,
+                fileSize: fileSize,
+                modificationDate: modificationDate
+            )
         }
-
-        // Get image resolution
-        let resolution = image.size
-
-        // Create thumbnail sized to match the list canvas (no upscaling later)
-        let thumbnailSize = CGSize(width: 120, height: 72)
-        let thumbnail = image.resized(to: thumbnailSize)
-
-        return ImageItem(
-            url: url,
-            thumbnail: thumbnail,
-            resolution: resolution,
-            fileSize: fileSize,
-            modificationDate: modificationDate
-        )
     }
 }
 
 extension NSImage {
     static func loadedNormalizingOrientation(from url: URL) -> NSImage? {
-        guard let original = NSImage(contentsOf: url) else { return nil }
+        return autoreleasepool {
+            guard let original = NSImage(contentsOf: url) else { return nil }
 
-        let normalized = NSImage(size: original.size)
-        normalized.lockFocus()
-        NSGraphicsContext.current?.imageInterpolation = .high
-        original.draw(
-            in: NSRect(origin: .zero, size: original.size),
-            from: NSRect(origin: .zero, size: original.size),
-            operation: .copy,
-            fraction: 1.0,
-            respectFlipped: false,
-            hints: nil
-        )
-        normalized.unlockFocus()
-        return normalized
+            // Use CGImage-based approach to avoid lockFocus memory leaks
+            guard let cgImage = original.cgImageRespectingOrientation() else { return nil }
+
+            let size = CGSize(width: cgImage.width, height: cgImage.height)
+            let image = NSImage(cgImage: cgImage, size: size)
+
+            return image
+        }
     }
 
     func resized(

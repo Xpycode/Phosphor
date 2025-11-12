@@ -22,6 +22,20 @@ extension EnvironmentValues {
 }
 
 struct ContentView: View {
+    @AppStorage("useNewWorkspace") private var useNewWorkspace = true
+
+    var body: some View {
+        Group {
+            if useNewWorkspace {
+                ProjectWorkspaceView()
+            } else {
+                LegacyContentView()
+            }
+        }
+    }
+}
+
+struct LegacyContentView: View {
     @StateObject private var viewModel = AppViewModel()
     @AppStorage("prefersLightMode") private var prefersLightMode = false
     @AppStorage("useOrangeAccent") private var useOrangeAccent = false

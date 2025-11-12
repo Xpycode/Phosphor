@@ -20,6 +20,17 @@
 		100000000000000B /* APNGExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000B /* APNGExporter.swift */; };
 		100000000000000C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000C /* Assets.xcassets */; };
 		100000000000000D /* ColorDepthReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000E /* ColorDepthReducer.swift */; };
+		100000000000000F /* Sequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000F /* Sequence.swift */; };
+		1000000000000010 /* MediaLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2000000000000010 /* MediaLibrary.swift */; };
+		1000000000000011 /* MediaLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2000000000000011 /* MediaLibraryView.swift */; };
+		1000000000000012 /* SequenceTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2000000000000012 /* SequenceTimelineView.swift */; };
+		1000000000000013 /* WorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2000000000000013 /* WorkspaceView.swift */; };
+		1000000000000014 /* ProjectStructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2000000000000014 /* ProjectStructure.swift */; };
+		1000000000000015 /* ProjectSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2000000000000015 /* ProjectSidebarView.swift */; };
+		1000000000000016 /* NewSequenceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2000000000000016 /* NewSequenceSheet.swift */; };
+		1000000000000017 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2000000000000017 /* TimelineView.swift */; };
+		1000000000000018 /* FrameSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2000000000000018 /* FrameSettingsView.swift */; };
+		1000000000000019 /* ProjectWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2000000000000019 /* ProjectWorkspaceView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +48,17 @@
 		200000000000000C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		200000000000000D /* Phosphor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Phosphor.entitlements; sourceTree = "<group>"; };
 		200000000000000E /* ColorDepthReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorDepthReducer.swift; sourceTree = "<group>"; };
+		200000000000000F /* Sequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sequence.swift; sourceTree = "<group>"; };
+		2000000000000010 /* MediaLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaLibrary.swift; sourceTree = "<group>"; };
+		2000000000000011 /* MediaLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaLibraryView.swift; sourceTree = "<group>"; };
+		2000000000000012 /* SequenceTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequenceTimelineView.swift; sourceTree = "<group>"; };
+		2000000000000013 /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
+		2000000000000014 /* ProjectStructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStructure.swift; sourceTree = "<group>"; };
+		2000000000000015 /* ProjectSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSidebarView.swift; sourceTree = "<group>"; };
+		2000000000000016 /* NewSequenceSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSequenceSheet.swift; sourceTree = "<group>"; };
+		2000000000000017 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
+		2000000000000018 /* FrameSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameSettingsView.swift; sourceTree = "<group>"; };
+		2000000000000019 /* ProjectWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWorkspaceView.swift; sourceTree = "<group>"; };
 		300000000000000E /* Phosphor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Phosphor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -87,6 +109,9 @@
 			children = (
 				2000000000000003 /* ImageItem.swift */,
 				2000000000000004 /* ExportSettings.swift */,
+				200000000000000F /* Sequence.swift */,
+				2000000000000010 /* MediaLibrary.swift */,
+				2000000000000014 /* ProjectStructure.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -97,6 +122,14 @@
 				2000000000000006 /* FileListView.swift */,
 				2000000000000007 /* PreviewPlayerView.swift */,
 				2000000000000008 /* SettingsPanelView.swift */,
+				2000000000000011 /* MediaLibraryView.swift */,
+				2000000000000012 /* SequenceTimelineView.swift */,
+				2000000000000013 /* WorkspaceView.swift */,
+				2000000000000015 /* ProjectSidebarView.swift */,
+				2000000000000016 /* NewSequenceSheet.swift */,
+				2000000000000017 /* TimelineView.swift */,
+				2000000000000018 /* FrameSettingsView.swift */,
+				2000000000000019 /* ProjectWorkspaceView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -201,6 +234,12 @@
 				100000000000000A /* WebPExporter.swift in Sources */,
 				100000000000000B /* APNGExporter.swift in Sources */,
 				100000000000000D /* ColorDepthReducer.swift in Sources */,
+				1000000000000014 /* ProjectStructure.swift in Sources */,
+				1000000000000015 /* ProjectSidebarView.swift in Sources */,
+				1000000000000016 /* NewSequenceSheet.swift in Sources */,
+				1000000000000017 /* TimelineView.swift in Sources */,
+				1000000000000018 /* FrameSettingsView.swift in Sources */,
+				1000000000000019 /* ProjectWorkspaceView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

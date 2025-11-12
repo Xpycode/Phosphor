@@ -44,33 +44,35 @@ struct APNGExporter {
 
         // Process each image
         for (index, item) in images.enumerated() {
-            guard var nsImage = NSImage.loadedNormalizingOrientation(from: item.url) else {
-                throw ExportError.failedToCreateImage
-            }
+            try autoreleasepool {
+                guard var nsImage = NSImage.loadedNormalizingOrientation(from: item.url) else {
+                    throw ExportError.failedToCreateImage
+                }
 
-            if let resizeInstruction = resizeInstruction {
-                nsImage = nsImage.resized(using: resizeInstruction)
-            }
+                if let resizeInstruction = resizeInstruction {
+                    nsImage = nsImage.resized(using: resizeInstruction)
+                }
 
-            guard let cgImage = nsImage.cgImageRespectingOrientation() else {
-                throw ExportError.failedToCreateImage
-            }
+                guard let cgImage = nsImage.cgImageRespectingOrientation() else {
+                    throw ExportError.failedToCreateImage
+                }
 
-            let delaySeconds: Double
-            if let overrides = perFrameDelays, index < overrides.count {
-                delaySeconds = max(0.01, overrides[index] / 1000.0)
-            } else {
-                delaySeconds = max(0.01, frameDelay)
-            }
-            let frameProperties: [String: Any] = [
-                kCGImagePropertyPNGDictionary as String: [
-                    kCGImagePropertyAPNGDelayTime as String: delaySeconds
+                let delaySeconds: Double
+                if let overrides = perFrameDelays, index < overrides.count {
+                    delaySeconds = max(0.01, overrides[index] / 1000.0)
+                } else {
+                    delaySeconds = max(0.01, frameDelay)
+                }
+                let frameProperties: [String: Any] = [
+                    kCGImagePropertyPNGDictionary as String: [
+                        kCGImagePropertyAPNGDelayTime as String: delaySeconds
+                    ]
                 ]
-            ]
 
-            CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
+                CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
+            }
 
-            // Update progress
+            // Update progress (outside autoreleasepool to avoid MainActor issues)
             let progress = Double(index + 1) / Double(images.count)
             await MainActor.run {
                 progressHandler(progress)

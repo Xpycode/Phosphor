@@ -75,46 +75,48 @@ struct GIFExporter {
 
         // Process each image
         for (index, item) in images.enumerated() {
-            guard var nsImage = NSImage.loadedNormalizingOrientation(from: item.url) else {
-                throw ExportError.failedToCreateImage
+            try autoreleasepool {
+                guard var nsImage = NSImage.loadedNormalizingOrientation(from: item.url) else {
+                    throw ExportError.failedToCreateImage
+                }
+
+                if let resizeInstruction = resizeInstruction {
+                    nsImage = nsImage.resized(using: resizeInstruction)
+                }
+
+                let paletteLevels = colorDepthLevels ?? 0
+                if paletteLevels > 0, let reduced = ColorDepthReducer.shared.applyingPosterize(to: nsImage, levels: paletteLevels) {
+                    nsImage = reduced
+                }
+
+                if dithering, paletteLevels > 0, let dithered = nsImage.applyingDither(intensity: GIFExporter.defaultDitherIntensity) {
+                    nsImage = dithered
+                }
+
+                guard let cgImage = nsImage.cgImageRespectingOrientation() else {
+                    throw ExportError.failedToCreateImage
+                }
+
+                let delaySeconds: Double
+                if let overrides = perFrameDelays, index < overrides.count {
+                    delaySeconds = max(0.01, overrides[index] / 1000.0)
+                } else {
+                    delaySeconds = max(0.01, frameDelay)
+                }
+                let gifFrameProperties: [String: Any] = [
+                    kCGImagePropertyGIFDelayTime as String: delaySeconds,
+                    kCGImagePropertyGIFUnclampedDelayTime as String: delaySeconds
+                ]
+
+                let frameProperties: [String: Any] = [
+                    kCGImageDestinationLossyCompressionQuality as String: max(0.0, min(1.0, quality)),
+                    kCGImagePropertyGIFDictionary as String: gifFrameProperties
+                ]
+
+                CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
             }
 
-            if let resizeInstruction = resizeInstruction {
-                nsImage = nsImage.resized(using: resizeInstruction)
-            }
-
-            let paletteLevels = colorDepthLevels ?? 0
-            if paletteLevels > 0, let reduced = ColorDepthReducer.shared.applyingPosterize(to: nsImage, levels: paletteLevels) {
-                nsImage = reduced
-            }
-
-            if dithering, paletteLevels > 0, let dithered = nsImage.applyingDither(intensity: GIFExporter.defaultDitherIntensity) {
-                nsImage = dithered
-            }
-
-            guard let cgImage = nsImage.cgImageRespectingOrientation() else {
-                throw ExportError.failedToCreateImage
-            }
-
-            let delaySeconds: Double
-            if let overrides = perFrameDelays, index < overrides.count {
-                delaySeconds = max(0.01, overrides[index] / 1000.0)
-            } else {
-                delaySeconds = max(0.01, frameDelay)
-            }
-            let gifFrameProperties: [String: Any] = [
-                kCGImagePropertyGIFDelayTime as String: delaySeconds,
-                kCGImagePropertyGIFUnclampedDelayTime as String: delaySeconds
-            ]
-
-            let frameProperties: [String: Any] = [
-                kCGImageDestinationLossyCompressionQuality as String: max(0.0, min(1.0, quality)),
-                kCGImagePropertyGIFDictionary as String: gifFrameProperties
-            ]
-
-            CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
-
-            // Update progress
+            // Update progress (outside autoreleasepool to avoid MainActor issues)
             let progress = Double(index + 1) / Double(images.count)
             await MainActor.run {
                 progressHandler(progress)

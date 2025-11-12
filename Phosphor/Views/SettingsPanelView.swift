@@ -50,7 +50,7 @@ struct SettingsPanelView: View {
 
             exportButton
         }
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color(NSColor.windowBackgroundColor))
         .onChange(of: viewModel.settings.format) { _, newValue in
             DispatchQueue.main.async {
                 if newValue != .gif {
