@@ -10,12 +10,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 import CoreGraphics
 
-// MARK: - Constants
-
-enum ImageConstants {
-    static let thumbnailSize = CGSize(width: 60, height: 60)
-}
-
 struct ImageItem: Identifiable, Equatable {
     let id = UUID()
     let url: URL
@@ -34,6 +28,21 @@ struct ImageItem: Identifiable, Equatable {
 
     var resolutionString: String {
         "\(Int(resolution.width)) × \(Int(resolution.height))"
+    }
+
+    var aspectRatioValue: Double? {
+        guard resolution.height > 0 else { return nil }
+        return Double(resolution.width / resolution.height)
+    }
+
+    var aspectRatioLabel: String {
+        guard resolution.width > 0, resolution.height > 0 else { return "—" }
+        let widthInt = max(Int(resolution.width.rounded()), 1)
+        let heightInt = max(Int(resolution.height.rounded()), 1)
+        let divisor = gcd(widthInt, heightInt)
+        let simplifiedWidth = widthInt / divisor
+        let simplifiedHeight = heightInt / divisor
+        return "\(simplifiedWidth):\(simplifiedHeight)"
     }
 
     static let supportedContentTypes: [UTType] = {
@@ -60,7 +69,7 @@ struct ImageItem: Identifiable, Equatable {
 
     static func from(url: URL) -> ImageItem? {
         guard isSupported(url: url) else { return nil }
-        guard let image = NSImage(contentsOf: url) else { return nil }
+        guard let image = NSImage.loadedNormalizingOrientation(from: url) else { return nil }
 
         // Get file attributes
         var fileSize: Int64 = 0
@@ -74,8 +83,9 @@ struct ImageItem: Identifiable, Equatable {
         // Get image resolution
         let resolution = image.size
 
-        // Create thumbnail
-        let thumbnail = image.resized(to: ImageConstants.thumbnailSize)
+        // Create thumbnail sized to match the list canvas (no upscaling later)
+        let thumbnailSize = CGSize(width: 120, height: 72)
+        let thumbnail = image.resized(to: thumbnailSize)
 
         return ImageItem(
             url: url,
@@ -88,11 +98,29 @@ struct ImageItem: Identifiable, Equatable {
 }
 
 extension NSImage {
+    static func loadedNormalizingOrientation(from url: URL) -> NSImage? {
+        guard let original = NSImage(contentsOf: url) else { return nil }
+
+        let normalized = NSImage(size: original.size)
+        normalized.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .high
+        original.draw(
+            in: NSRect(origin: .zero, size: original.size),
+            from: NSRect(origin: .zero, size: original.size),
+            operation: .copy,
+            fraction: 1.0,
+            respectFlipped: false,
+            hints: nil
+        )
+        normalized.unlockFocus()
+        return normalized
+    }
+
     func resized(
         to targetSize: CGSize,
         preservingAspectRatio: Bool = true
     ) -> NSImage {
-        guard let sourceCGImage = cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+        guard let sourceCGImage = cgImageRespectingOrientation() else {
             return self
         }
 
@@ -140,6 +168,53 @@ extension NSImage {
 
         return NSImage(cgImage: scaledCGImage, size: finalSize)
     }
+
+    func resized(using instruction: ResizeInstruction) -> NSImage {
+        switch instruction {
+        case let .scale(percent):
+            let factor = max(percent, 1) / 100.0
+            let targetSize = CGSize(
+                width: max(size.width * factor, 1),
+                height: max(size.height * factor, 1)
+            )
+            return resized(to: targetSize, preservingAspectRatio: false)
+        case let .fill(targetSize):
+            return resizedToFill(targetSize: targetSize)
+        }
+    }
+
+    private func resizedToFill(targetSize: CGSize) -> NSImage {
+        let targetWidth = max(targetSize.width, 1)
+        let targetHeight = max(targetSize.height, 1)
+        let finalTarget = CGSize(width: targetWidth, height: targetHeight)
+
+        let scale = max(
+            finalTarget.width / size.width,
+            finalTarget.height / size.height
+        )
+
+        let drawSize = CGSize(
+            width: size.width * scale,
+            height: size.height * scale
+        )
+
+        let drawOrigin = CGPoint(
+            x: (finalTarget.width - drawSize.width) / 2.0,
+            y: (finalTarget.height - drawSize.height) / 2.0
+        )
+
+        let image = NSImage(size: finalTarget)
+        image.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .high
+        self.draw(
+            in: CGRect(origin: drawOrigin, size: drawSize),
+            from: .zero,
+            operation: .sourceOver,
+            fraction: 1.0
+        )
+        image.unlockFocus()
+        return image
+    }
 }
 
 extension ImageItem {
@@ -154,4 +229,27 @@ extension ImageItem {
 
         return supportedContentTypes.contains { type.conforms(to: $0) }
     }
+}
+
+extension NSImage {
+    func cgImageRespectingOrientation() -> CGImage? {
+        guard
+            let tiffData = tiffRepresentation,
+            let bitmap = NSBitmapImageRep(data: tiffData)
+        else {
+            return nil
+        }
+        return bitmap.cgImage
+    }
+}
+
+private func gcd(_ a: Int, _ b: Int) -> Int {
+    var x = abs(a)
+    var y = abs(b)
+    while y != 0 {
+        let remainder = x % y
+        x = y
+        y = remainder
+    }
+    return max(x, 1)
 }

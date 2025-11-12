@@ -47,7 +47,6 @@ struct GIFExporter {
         quality: Double,
         dithering: Bool,
         resizeInstruction: ResizeInstruction?,
-        dominantAspectRatio: Double?,
         colorDepthLevels: Int?,
         perFrameDelays: [Double]?,
         progressHandler: @escaping (Double) -> Void
@@ -76,12 +75,12 @@ struct GIFExporter {
 
         // Process each image
         for (index, item) in images.enumerated() {
-            guard var nsImage = NSImage(contentsOf: item.url) else {
+            guard var nsImage = NSImage.loadedNormalizingOrientation(from: item.url) else {
                 throw ExportError.failedToCreateImage
             }
 
             if let resizeInstruction = resizeInstruction {
-                nsImage = nsImage.resized(using: resizeInstruction, dominantAspectRatio: dominantAspectRatio)
+                nsImage = nsImage.resized(using: resizeInstruction)
             }
 
             let paletteLevels = colorDepthLevels ?? 0
@@ -93,7 +92,7 @@ struct GIFExporter {
                 nsImage = dithered
             }
 
-            guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            guard let cgImage = nsImage.cgImageRespectingOrientation() else {
                 throw ExportError.failedToCreateImage
             }
 
@@ -135,16 +134,8 @@ private extension GIFExporter {
 }
 
 extension NSImage {
-    func cgImage(forProposedRect proposedDestRect: UnsafeMutablePointer<NSRect>?, context: NSGraphicsContext?, hints: [NSImageRep.HintKey: Any]?) -> CGImage? {
-        guard let imageData = self.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: imageData) else {
-            return nil
-        }
-        return bitmap.cgImage
-    }
-
     func applyingDither(intensity: Double) -> NSImage? {
-        guard let cgImage = cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+        guard let cgImage = cgImageRespectingOrientation() else {
             return nil
         }
 

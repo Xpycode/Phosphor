@@ -17,7 +17,6 @@ struct APNGExporter {
         frameDelay: Double,
         loopCount: Int,
         resizeInstruction: ResizeInstruction?,
-        dominantAspectRatio: Double?,
         perFrameDelays: [Double]?,
         progressHandler: @escaping (Double) -> Void
     ) async throws {
@@ -45,15 +44,15 @@ struct APNGExporter {
 
         // Process each image
         for (index, item) in images.enumerated() {
-            guard var nsImage = NSImage(contentsOf: item.url) else {
+            guard var nsImage = NSImage.loadedNormalizingOrientation(from: item.url) else {
                 throw ExportError.failedToCreateImage
             }
 
             if let resizeInstruction = resizeInstruction {
-                nsImage = nsImage.resized(using: resizeInstruction, dominantAspectRatio: dominantAspectRatio)
+                nsImage = nsImage.resized(using: resizeInstruction)
             }
 
-            guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            guard let cgImage = nsImage.cgImageRespectingOrientation() else {
                 throw ExportError.failedToCreateImage
             }
 

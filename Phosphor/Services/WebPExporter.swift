@@ -16,7 +16,6 @@ struct WebPExporter {
         loopCount: Int,
         quality: Double,
         resizeInstruction _: ResizeInstruction?,
-        dominantAspectRatio _: Double?,
         perFrameDelays _: [Double]?,
         progressHandler: @escaping (Double) -> Void
     ) async throws {
@@ -28,7 +27,6 @@ struct WebPExporter {
         // For now, we'll provide a fallback message
         // In a production app, you would integrate libwebp or use a Swift package
 
-        // Fallback: Export as GIF with a message
         throw NSError(
             domain: "PhosphorExport",
             code: -1,

@@ -47,14 +47,23 @@ enum SortOrder: String, CaseIterable {
     case manual = "Manual"
 }
 
-enum ResizeMode: String, CaseIterable {
-    case common
-    case custom
-}
-
 enum ResizeInstruction {
     case scale(percent: Double)
-    case exact(size: CGSize, maintainAspect: Bool, cropToDominantAspect: Bool)
+    case fill(size: CGSize)
+}
+
+enum CanvasMode: String, CaseIterable, Identifiable {
+    case automatic
+    case custom
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .automatic: return "Auto"
+        case .custom: return "Custom"
+        }
+    }
 }
 
 struct ResizePresetOption: Identifiable {
@@ -169,11 +178,10 @@ class ExportSettings: ObservableObject {
     @Published var enableDithering: Bool = true
     @Published var sortOrder: SortOrder = .fileName
     @Published var resizeEnabled: Bool = false
-    @Published var resizeWidth: Double = 640
-    @Published var resizeHeight: Double = 480
-    @Published var resizeMode: ResizeMode = .common
-    @Published var selectedResizePresetID: String = ResizePresetOption.defaultID(for: .gif)
-    @Published var maintainAspectRatio: Bool = true
+    @Published var canvasMode: CanvasMode = .automatic
+    @Published var canvasWidth: Double = 640
+    @Published var canvasHeight: Double = 480
+    @Published var automaticCanvasSize: CGSize?
     @Published var frameSkippingEnabled: Bool = false
     @Published var frameSkipInterval: Int = 2
     @Published var sizeLimitEnabled: Bool = false
@@ -182,8 +190,6 @@ class ExportSettings: ObservableObject {
     @Published var colorDepthEnabled: Bool = false
     @Published var colorDepthLevels: Double = 16 // corresponds to CIColorPosterize levels
     @Published var overrideCustomFrameTimings: Bool = false
-    @Published var resizeScalePercent: Double = 100
-    @Published var cropOutliersToDominantAspect: Bool = true
 
     private var isUpdating = false
 
@@ -232,19 +238,18 @@ class ExportSettings: ObservableObject {
     }
 
     var resizeInstruction: ResizeInstruction? {
-        guard resizeEnabled else { return nil }
-        switch resizeMode {
-        case .common:
-            return .scale(percent: resizeScalePercent)
+        guard resizeEnabled, let target = resolvedCanvasSize else { return nil }
+        return .fill(size: target)
+    }
+
+    var resolvedCanvasSize: CGSize? {
+        switch canvasMode {
+        case .automatic:
+            return automaticCanvasSize
         case .custom:
-            let width = max(1, resizeWidth)
-            let height = max(1, resizeHeight)
-            let size = CGSize(width: CGFloat(width), height: CGFloat(height))
-            return .exact(
-                size: size,
-                maintainAspect: maintainAspectRatio,
-                cropToDominantAspect: cropOutliersToDominantAspect
-            )
+            let width = max(1, canvasWidth)
+            let height = max(1, canvasHeight)
+            return CGSize(width: width, height: height)
         }
     }
 

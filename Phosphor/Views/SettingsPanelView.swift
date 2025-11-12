@@ -150,112 +150,34 @@ struct SettingsPanelView: View {
 
                 GroupBox {
                     VStack(alignment: .leading, spacing: 8) {
-                        Toggle("Resize Output", isOn: $viewModel.settings.resizeEnabled)
+                        Toggle("Use Canvas", isOn: $viewModel.settings.resizeEnabled)
                             .font(.caption)
                             .tint(accentColor)
 
                         if viewModel.settings.resizeEnabled {
-                            Picker("", selection: $viewModel.settings.resizeMode) {
-                                Text("Scale").tag(ResizeMode.common)
-                                Text("Exact").tag(ResizeMode.custom)
+                            Picker("", selection: $viewModel.settings.canvasMode) {
+                                ForEach(CanvasMode.allCases) { mode in
+                                    Text(mode.label).tag(mode)
+                                }
                             }
                             .pickerStyle(.segmented)
-                            .frame(width: 200)
+                            .frame(width: 220)
                             .tint(accentColor)
 
-                            if viewModel.settings.resizeMode == .common {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Slider(
-                                        value: Binding(
-                                            get: { viewModel.settings.resizeScalePercent },
-                                            set: { value in
-                                                let snaps: [Double] = [10, 25, 50, 75, 100, 125, 150, 175, 200]
-                                                if let snap = snaps.min(by: { abs($0 - value) < abs($1 - value) }),
-                                                   abs(snap - value) <= 3 {
-                                                    viewModel.settings.resizeScalePercent = snap
-                                                } else {
-                                                    viewModel.settings.resizeScalePercent = min(max(value, 10), 200)
-                                                }
-                                            }
-                                        ),
-                                        in: 10...200,
-                                        step: 5
-                                    )
-                                    .tint(accentColor)
-
-                                    HStack(spacing: 8) {
-                                        ForEach([10, 25, 50, 75, 100], id: \.self) { value in
-                                            Button("\(value)%") {
-                                                viewModel.settings.resizeScalePercent = Double(value)
-                                            }
-                                            .buttonStyle(.borderless)
-                                            .font(.caption2)
-                                        }
-                                        Spacer()
-                                        Text("\(Int(viewModel.settings.resizeScalePercent))%")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-
-                                    if let previewSize = viewModel.scaledSize(
-                                        for: viewModel.settings.resizeScalePercent,
-                                        relativeTo: currentFrame
-                                    ) {
-                                        Text("Current frame: \(Int(previewSize.width)) × \(Int(previewSize.height)) px")
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    } else {
-                                        Text("Scaling preserves each frame's aspect ratio.")
-                                            .font(.caption2)
-                                            .foregroundStyle(.tertiary)
-                                    }
-                                }
-
-                                Text("Scaling shrinks or enlarges every frame by the same percentage while keeping their shapes intact.")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack(spacing: 12) {
-                                        dimensionField(
-                                            title: "Width",
-                                            value: dimensionBinding(for: .width)
-                                        )
-
-                                        dimensionField(
-                                            title: "Height",
-                                            value: dimensionBinding(for: .height)
-                                        )
-                                    }
-
-                                    Toggle("Maintain aspect ratio", isOn: $viewModel.settings.maintainAspectRatio)
-                                        .font(.caption)
-                                        .tint(accentColor)
-
-                                    if viewModel.settings.maintainAspectRatio,
-                                       let inferred = inferredHeight(for: viewModel.settings.resizeWidth) {
-                                        Text("≈ \(Int(inferred)) px tall based on dominant aspect.")
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-
-                                    if viewModel.settings.maintainAspectRatio,
-                                       viewModel.dominantAspectLabel != nil {
-                                        Toggle(
-                                            "Crop frames to match the dominant aspect",
-                                            isOn: $viewModel.settings.cropOutliersToDominantAspect
-                                        )
-                                        .font(.caption)
-                                        .tint(accentColor)
-                                    }
-                                }
+                            switch viewModel.settings.canvasMode {
+                            case .automatic:
+                                automaticCanvasView
+                            case .custom:
+                                customCanvasView
                             }
 
-                            if viewModel.hasMixedAspectRatios {
-                                Text("Warning: selected frames have different aspect ratios. Maintaining aspect ratio keeps each frame's shape, so output dimensions can differ.")
-                                    .font(.caption2)
-                                    .foregroundColor(.orange)
-                            }
+                            Text("Frames scale to fill the canvas; outlier ratios crop centrally.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Exports keep each frame’s original resolution and aspect.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .padding(10)
@@ -460,6 +382,48 @@ struct SettingsPanelView: View {
         }
     }
 
+    @ViewBuilder
+    private var automaticCanvasView: some View {
+        if let size = viewModel.settings.automaticCanvasSize {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Canvas: \(Int(size.width)) × \(Int(size.height)) px")
+                    .font(.caption)
+                if let aspect = viewModel.dominantAspectLabel {
+                    Text("Matching dominant aspect \(aspect). Largest frame sets the size.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Largest frame sets the size. Add more frames to refine.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                if viewModel.hasMixedAspectRatios {
+                    Text("Other ratios crop to fill this canvas.")
+                        .font(.caption2)
+                        .foregroundColor(.orange)
+                }
+            }
+        } else {
+            Text("Add frames to determine an automatic canvas.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    private var customCanvasView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                dimensionField(title: "Width", value: dimensionBinding(for: .width))
+                dimensionField(title: "Height", value: dimensionBinding(for: .height))
+            }
+
+            Text("Frames scale to fill \(Int(viewModel.settings.canvasWidth))×\(Int(viewModel.settings.canvasHeight)) and crop overflow.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
     private var exportButton: some View {
         VStack(spacing: 8) {
             if viewModel.isExporting {
@@ -524,50 +488,26 @@ struct SettingsPanelView: View {
     }
 
     private func dimensionBinding(for dimension: OutputDimension) -> Binding<Double> {
-        Binding(
+        let range: ClosedRange<Double> = 64...4096
+        return Binding(
             get: {
                 switch dimension {
                 case .width:
-                    return viewModel.settings.resizeWidth
+                    return viewModel.settings.canvasWidth
                 case .height:
-                    return viewModel.settings.resizeHeight
+                    return viewModel.settings.canvasHeight
                 }
             },
             set: { newValue in
-                let range: ClosedRange<Double> = 64...4096
                 let clamped = min(max(newValue, range.lowerBound), range.upperBound)
-                let currentWidth = viewModel.settings.resizeWidth
-                let currentHeight = viewModel.settings.resizeHeight
-                let aspectRatio = currentHeight > 0 ? currentWidth / currentHeight : nil
-
                 switch dimension {
                 case .width:
-                    viewModel.settings.resizeWidth = clamped
-                    adjustHeightIfNeeded(using: aspectRatio, newWidth: clamped, range: range)
+                    viewModel.settings.canvasWidth = clamped
                 case .height:
-                    viewModel.settings.resizeHeight = clamped
-                    adjustWidthIfNeeded(using: aspectRatio, newHeight: clamped, range: range)
+                    viewModel.settings.canvasHeight = clamped
                 }
             }
         )
-    }
-
-    private func adjustHeightIfNeeded(using ratio: Double?, newWidth: Double, range: ClosedRange<Double>) {
-        guard shouldMaintainAspect(), let ratio = ratio, ratio.isFinite, ratio > 0 else { return }
-        let newHeight = max(range.lowerBound, min(newWidth / ratio, range.upperBound))
-        viewModel.settings.resizeHeight = newHeight.rounded()
-    }
-
-    private func adjustWidthIfNeeded(using ratio: Double?, newHeight: Double, range: ClosedRange<Double>) {
-        guard shouldMaintainAspect(), let ratio = ratio, ratio.isFinite, ratio > 0 else { return }
-        let newWidth = max(range.lowerBound, min(newHeight * ratio, range.upperBound))
-        viewModel.settings.resizeWidth = newWidth.rounded()
-    }
-
-    private func shouldMaintainAspect() -> Bool {
-        viewModel.settings.resizeEnabled &&
-        viewModel.settings.resizeMode == .custom &&
-        viewModel.settings.maintainAspectRatio
     }
 
     private func formattedColorCount(for count: Int) -> String {
@@ -676,10 +616,9 @@ struct SettingsPanelView: View {
     private func applyPlatformPresetIfNeeded(for id: String?) {
         guard let id, let preset = ExportPlatformPreset.preset(id: id) else { return }
         viewModel.settings.resizeEnabled = true
-        viewModel.settings.resizeMode = .custom
-        viewModel.settings.resizeWidth = Double(preset.maxDimensions.width)
-        viewModel.settings.resizeHeight = Double(preset.maxDimensions.height)
-        viewModel.settings.maintainAspectRatio = true
+        viewModel.settings.canvasMode = .custom
+        viewModel.settings.canvasWidth = Double(preset.maxDimensions.width)
+        viewModel.settings.canvasHeight = Double(preset.maxDimensions.height)
         viewModel.settings.sizeLimitEnabled = true
         viewModel.settings.maxFileSizeMB = preset.maxFileSizeMB
         viewModel.settings.frameRate = preset.recommendedFrameRate

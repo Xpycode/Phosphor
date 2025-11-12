@@ -47,7 +47,7 @@ class AppViewModel: ObservableObject {
 
     var currentImage: NSImage? {
         guard !sortedImages.isEmpty, currentFrameIndex < sortedImages.count else { return nil }
-        return NSImage(contentsOf: sortedImages[currentFrameIndex].url)
+        return NSImage.loadedNormalizingOrientation(from: sortedImages[currentFrameIndex].url)
     }
 
     var totalFrames: Int {
@@ -105,6 +105,11 @@ class AppViewModel: ObservableObject {
         return sample.aspectRatioLabel
     }
 
+    var activeCanvasSize: CGSize? {
+        guard settings.resizeEnabled else { return nil }
+        return settings.resolvedCanvasSize
+    }
+
     func delayForFrame(at index: Int) -> Double {
         guard index >= 0 && index < sortedImages.count else { return settings.frameDelay }
         if settings.overrideCustomFrameTimings {
@@ -147,23 +152,14 @@ class AppViewModel: ObservableObject {
             : 1.0
 
         var resizeFactor = 1.0
-        if settings.resizeEnabled {
-            switch settings.resizeMode {
-            case .common:
-                let scalePercent = max(settings.resizeScalePercent, 1)
-                let scale = scalePercent / 100.0
-                // Area scales with square of the linear percentage
-                let areaRatio = scale * scale
-                resizeFactor = max(0.01, min(areaRatio, 1.0))
-            case .custom:
-                let averageArea = frames
-                    .map { Double($0.resolution.width * $0.resolution.height) }
-                    .reduce(0, +) / Double(frames.count)
-                if averageArea > 0 {
-                    let targetArea = settings.resizeWidth * settings.resizeHeight
-                    let ratio = targetArea / averageArea
-                    resizeFactor = max(0.1, min(ratio, 1.0))
-                }
+        if let target = activeCanvasSize {
+            let averageArea = frames
+                .map { Double($0.resolution.width * $0.resolution.height) }
+                .reduce(0, +) / Double(frames.count)
+            if averageArea > 0 {
+                let targetArea = Double(target.width * target.height)
+                let ratio = targetArea / averageArea
+                resizeFactor = max(0.1, min(ratio, 1.0))
             }
         }
 
@@ -238,6 +234,8 @@ class AppViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+
+        refreshAutomaticCanvasSize()
     }
 
     func addImages(from urls: [URL]) {
@@ -274,6 +272,7 @@ class AppViewModel: ObservableObject {
                         if self.importTaskID == taskID {
                             self.imageItems.append(contentsOf: flushedItems)
                             self.importProgress = Double(index + 1) / Double(max(total, 1))
+                            self.refreshAutomaticCanvasSize()
                         }
                     }
                 } else {
@@ -312,6 +311,7 @@ class AppViewModel: ObservableObject {
         } else if currentFrameIndex >= visibleCount {
             currentFrameIndex = max(visibleCount - 1, 0)
         }
+        refreshAutomaticCanvasSize()
     }
 
     func clearAll() {
@@ -319,10 +319,12 @@ class AppViewModel: ObservableObject {
         currentFrameIndex = 0
         stopPlayback()
         customFrameDelays.removeAll()
+        refreshAutomaticCanvasSize()
     }
 
     func moveItems(from source: IndexSet, to destination: Int) {
         imageItems.move(fromOffsets: source, toOffset: destination)
+        refreshAutomaticCanvasSize()
     }
 
     // MARK: - Frame Timing
@@ -441,7 +443,6 @@ class AppViewModel: ObservableObject {
         }
 
         let resizeInstruction = settings.resizeInstruction
-        let dominantAspectRatio = referenceAspectRatio
         let sizeLimitBytes = exportSizeLimitBytes
         let colorDepthLevels = settings.clampedColorDepthLevels
         let perFrameDelays = perFrameDelays(for: images)
@@ -456,7 +457,6 @@ class AppViewModel: ObservableObject {
                 quality: settings.quality,
                 dithering: settings.enableDithering,
                 resizeInstruction: resizeInstruction,
-                dominantAspectRatio: dominantAspectRatio,
                 colorDepthLevels: colorDepthLevels > 0 ? colorDepthLevels : nil,
                 perFrameDelays: perFrameDelays,
                 progressHandler: { [weak self] progress in
@@ -473,7 +473,6 @@ class AppViewModel: ObservableObject {
                 loopCount: settings.loopCount,
                 quality: settings.quality,
                 resizeInstruction: resizeInstruction,
-                dominantAspectRatio: dominantAspectRatio,
                 perFrameDelays: perFrameDelays,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor in
@@ -488,7 +487,6 @@ class AppViewModel: ObservableObject {
                 frameDelay: settings.frameDelay / 1000.0,
                 loopCount: settings.loopCount,
                 resizeInstruction: resizeInstruction,
-                dominantAspectRatio: dominantAspectRatio,
                 perFrameDelays: perFrameDelays,
                 progressHandler: { [weak self] progress in
                     Task { @MainActor in
@@ -530,13 +528,31 @@ class AppViewModel: ObservableObject {
         item.aspectRatioLabel
     }
 
-    func scaledSize(for percent: Double, relativeTo item: ImageItem?) -> CGSize? {
-        let referenceItem = item ?? sortedImages.first
-        guard let referenceItem else { return nil }
-        let factor = max(percent, 1) / 100.0
-        let width = Double(referenceItem.resolution.width) * factor
-        let height = Double(referenceItem.resolution.height) * factor
-        guard width.isFinite, height.isFinite else { return nil }
-        return CGSize(width: max(width, 1), height: max(height, 1))
+    private func refreshAutomaticCanvasSize() {
+        settings.automaticCanvasSize = computeAutomaticCanvasSize()
+    }
+
+    private func computeAutomaticCanvasSize() -> CGSize? {
+        guard !sortedImages.isEmpty else { return nil }
+        let pool: [ImageItem]
+        if let ratio = dominantAspectRatio {
+            let filtered = sortedImages.filter { item in
+                guard let value = item.aspectRatioValue else { return false }
+                return abs(value - ratio) <= aspectTolerance
+            }
+            pool = filtered.isEmpty ? sortedImages : filtered
+        } else {
+            pool = sortedImages
+        }
+
+        guard let candidate = pool.max(by: { lhs, rhs in
+            let lhsArea = lhs.resolution.width * lhs.resolution.height
+            let rhsArea = rhs.resolution.width * rhs.resolution.height
+            return lhsArea < rhsArea
+        }) else {
+            return nil
+        }
+
+        return candidate.resolution
     }
 }
