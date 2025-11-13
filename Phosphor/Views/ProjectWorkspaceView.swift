@@ -3,7 +3,7 @@
 //  Phosphor
 //
 //  Created on 2025-11-12
-//  Main workspace view with NLE-style layout
+//  Refactored 2025-11-13 for 6-pane layout with progressive disclosure
 //
 
 import SwiftUI
@@ -11,39 +11,70 @@ import UniformTypeIdentifiers
 
 struct ProjectWorkspaceView: View {
     @StateObject private var project = Project()
+    @StateObject private var workspaceState = WorkspaceState()
     @StateObject private var importManager = ImportManager()
     @State private var showNewSequenceSheet = false
     @State private var selectedFrameIDs = Set<UUID>()
-    @State private var showExportPanel = false
 
     var body: some View {
         ZStack {
+            // 6-Pane Layout (3x2 grid)
             HSplitView {
-                // Left: Sidebar (MEDIA + SEQUENCES)
-                ProjectSidebarView(project: project)
+                // LEFT COLUMN
+                if workspaceState.showSequences || workspaceState.showMedia {
+                    VSplitView {
+                        // Top-Left: SEQUENCES
+                        if workspaceState.showSequences {
+                            SequencesPaneView(project: project)
+                                .frame(minHeight: 150, idealHeight: 250)
+                        }
+
+                        // Bottom-Left: MEDIA
+                        if workspaceState.showMedia {
+                            MediaPaneView(project: project)
+                                .frame(minHeight: 150, idealHeight: 300)
+                        }
+                    }
                     .frame(minWidth: 200, idealWidth: 250, maxWidth: 350)
+                }
 
-                // Center: Preview + Timeline + Frame Settings
+                // CENTER COLUMN (always visible)
                 VSplitView {
-                    // Top: Preview
-                    PreviewMonitorView(project: project)
-                        .frame(minHeight: 300, idealHeight: 500)
-
-                    // Bottom: Timeline + Frame Settings
+                    // Top-Center: VIEWER (with FPS controls below)
                     VStack(spacing: 0) {
-                        TimelineView(project: project)
-                            .frame(minHeight: 150, idealHeight: 200, maxHeight: 300)
+                        PreviewMonitorView(project: project, workspaceState: workspaceState)
+                            .frame(minHeight: 300, idealHeight: 500)
+                    }
+
+                    // Bottom-Center: TIMELINE + FRAME SETTINGS
+                    VStack(spacing: 0) {
+                        TimelineView(project: project, selectedFrameIDs: $selectedFrameIDs)
+                            .frame(minHeight: 100, idealHeight: 150)
 
                         Divider()
 
                         FrameSettingsView(project: project, selectedFrameIDs: selectedFrameIDs)
-                            .frame(minHeight: 150, idealHeight: 200, maxHeight: 300)
+                            .frame(minHeight: 100, idealHeight: 150)
                     }
                 }
 
-                // Right: Export Panel
-                ExportPanelView(project: project)
+                // RIGHT COLUMN
+                if workspaceState.showSequenceSettings || workspaceState.showExport {
+                    VSplitView {
+                        // Top-Right: SEQUENCE SETTINGS
+                        if workspaceState.showSequenceSettings {
+                            SequenceSettingsPaneView(project: project)
+                                .frame(minHeight: 150, idealHeight: 300)
+                        }
+
+                        // Bottom-Right: EXPORT
+                        if workspaceState.showExport {
+                            ExportPanelView(project: project)
+                                .frame(minHeight: 150, idealHeight: 300)
+                        }
+                    }
                     .frame(minWidth: 280, idealWidth: 320, maxWidth: 400)
+                }
             }
 
             // Import progress overlay
@@ -98,7 +129,13 @@ struct ProjectWorkspaceView: View {
             }
         }
         .sheet(isPresented: $showNewSequenceSheet) {
-            NewSequenceSheet(project: project, isPresented: $showNewSequenceSheet)
+            NewSequenceSheet(project: project, isPresented: $showNewSequenceSheet, workspaceState: workspaceState)
+        }
+        .onAppear {
+            // Auto-reveal sequences pane if there are existing sequences
+            if !project.sequenceContainers.isEmpty {
+                workspaceState.revealSequencesPane()
+            }
         }
     }
 
@@ -112,6 +149,8 @@ struct ProjectWorkspaceView: View {
         panel.allowedContentTypes = ImageItem.supportedContentTypes
 
         if panel.runModal() == .OK {
+            // Reveal media pane when importing
+            workspaceState.revealMediaPane()
             handleImport(urls: panel.urls)
         }
     }
@@ -222,6 +261,9 @@ struct ProjectWorkspaceView: View {
     private func exportSequence() {
         guard let sequence = project.activeSequence else { return }
 
+        // Reveal export pane when exporting
+        workspaceState.revealExportPane()
+
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "\(sequence.name).gif"
         panel.allowedContentTypes = [.gif]
@@ -237,6 +279,7 @@ struct ProjectWorkspaceView: View {
 
 struct PreviewMonitorView: View {
     @ObservedObject var project: Project
+    @ObservedObject var workspaceState: WorkspaceState
     @State private var currentFrameIndex: Int = 0
     @State private var isPlaying: Bool = false
     @State private var playbackTimer: Timer?
@@ -260,8 +303,10 @@ struct PreviewMonitorView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Preview")
-                    .font(.headline)
+                Text("VIEWER")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
 
                 if let seq = sequence {
                     Text("•")
@@ -275,6 +320,7 @@ struct PreviewMonitorView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
+            .background(Color(nsColor: .controlBackgroundColor))
 
             Divider()
 
@@ -343,6 +389,54 @@ struct PreviewMonitorView: View {
                             Image(systemName: "forward")
                         }
                         .buttonStyle(.plain)
+                    }
+
+                    Divider()
+                        .padding(.vertical, 4)
+
+                    // FPS / Delay Controls
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Frame Rate")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            HStack(spacing: 4) {
+                                TextField("FPS", value: Binding(
+                                    get: { seq.frameRate },
+                                    set: { project.activeSequence?.frameRate = $0 }
+                                ), format: .number)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 60)
+                                Text("fps")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Frame Delay")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            HStack(spacing: 4) {
+                                Text("\(Int(seq.frameDelay))")
+                                    .font(.caption)
+                                    .monospacedDigit()
+                                    .frame(width: 40, alignment: .trailing)
+                                Text("ms")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        Spacer()
+
+                        Button(action: {
+                            workspaceState.toggleSequenceSettings()
+                        }) {
+                            Label("More Settings", systemImage: "gearshape")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.bordered)
                     }
                 }
                 .padding()

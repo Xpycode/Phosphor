@@ -9,39 +9,61 @@ import SwiftUI
 
 struct ProjectSidebarView: View {
     @ObservedObject var project: Project
-    @State private var selectedMediaBinID: UUID?
-    @State private var selectedSequenceID: UUID?
 
     var body: some View {
-        List(selection: $selectedSequenceID) {
-            // MEDIA Section
-            Section(header: Text("MEDIA").font(.caption).fontWeight(.semibold)) {
-                ForEach(project.mediaBins) { bin in
-                    MediaBinRow(bin: bin, project: project)
+        VSplitView {
+            // SEQUENCES (Top)
+            VStack(spacing: 0) {
+                Text("SEQUENCES")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(nsColor: .controlBackgroundColor))
+
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(project.sequenceContainers) { container in
+                            SequenceContainerRow(container: container, project: project)
+                        }
+
+                        if project.sequenceContainers.isEmpty {
+                            Text("No sequences")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                                .italic()
+                                .padding()
+                        }
+                    }
+                    .padding(.horizontal, 4)
                 }
             }
+            .frame(minHeight: 100)
 
-            // SEQUENCES Section
-            Section(header: Text("SEQUENCES").font(.caption).fontWeight(.semibold)) {
-                ForEach(project.sequenceContainers) { container in
-                    SequenceContainerRow(container: container, project: project)
-                }
+            // MEDIA (Bottom)
+            VStack(spacing: 0) {
+                Text("MEDIA")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(nsColor: .controlBackgroundColor))
 
-                if project.sequenceContainers.isEmpty {
-                    Text("No sequences")
-                        .foregroundColor(.secondary)
-                        .font(.caption)
-                        .italic()
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(project.mediaBins) { bin in
+                            MediaBinRow(bin: bin, project: project)
+                        }
+                    }
+                    .padding(.horizontal, 4)
                 }
             }
+            .frame(minHeight: 100)
         }
-        .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
         .background(Color(nsColor: .windowBackgroundColor))
         .frame(minWidth: 200, idealWidth: 250)
-        .onChange(of: selectedSequenceID) { _, newValue in
-            project.activeSequenceID = newValue
-        }
     }
 }
 

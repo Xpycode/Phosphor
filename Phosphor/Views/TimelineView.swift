@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TimelineView: View {
     @ObservedObject var project: Project
-    @State private var selectedFrameIDs = Set<UUID>()
+    @Binding var selectedFrameIDs: Set<UUID>
     @State private var thumbnailZoom: Double = 1.0 // 0.5 to 2.0
     @State private var draggedFrameID: UUID?
     @State private var isDropTargeted = false

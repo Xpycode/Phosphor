@@ -3,6 +3,7 @@
 //  Phosphor
 //
 //  Created on 2025-11-12
+//  Updated 2025-11-13
 //
 
 import SwiftUI
@@ -10,6 +11,7 @@ import SwiftUI
 struct NewSequenceSheet: View {
     @ObservedObject var project: Project
     @Binding var isPresented: Bool
+    var workspaceState: WorkspaceState
 
     @State private var name: String = "Untitled Sequence"
     @State private var selectedPreset: CanvasPreset = CanvasPreset.presets[0]
@@ -193,10 +195,12 @@ struct NewSequenceSheet: View {
             fitMode: defaultFitMode,
             inBin: false
         )
+        // Reveal sequences pane when creating a sequence
+        workspaceState.revealSequencesPane()
         isPresented = false
     }
 }
 
 #Preview {
-    NewSequenceSheet(project: Project(), isPresented: .constant(true))
+    NewSequenceSheet(project: Project(), isPresented: .constant(true), workspaceState: WorkspaceState())
 }
