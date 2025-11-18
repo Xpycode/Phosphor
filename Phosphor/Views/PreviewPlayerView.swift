@@ -31,7 +31,15 @@ struct PreviewPlayerView: View {
             // Preview Area
             GeometryReader { geometry in
                 ZStack {
-                    if let image = viewModel.currentImage {
+                    if viewModel.currentItemIsVideo, let item = viewModel.currentImageItem {
+                        VideoPlayerView(
+                            url: item.url,
+                            currentTime: $viewModel.currentVideoTime,
+                            isPlaying: $viewModel.isPlaying,
+                            duration: item.duration ?? 0.0
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if let image = viewModel.currentImage {
                         Image(nsImage: image)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
@@ -58,7 +66,64 @@ struct PreviewPlayerView: View {
             // Playback Controls sit directly beneath the preview
             VStack(spacing: 4) {
                 // Scrubber
-                if viewModel.totalFrames > 1 {
+                if viewModel.currentItemIsVideo {
+                    // Video time scrubber with in/out markers
+                    HStack(spacing: 8) {
+                        Text(formatTime(viewModel.currentVideoTime))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .frame(width: 50, alignment: .trailing)
+
+                        ZStack(alignment: .leading) {
+                            // Background slider
+                            Slider(
+                                value: $viewModel.currentVideoTime,
+                                in: 0...max(0, viewModel.currentVideoDuration)
+                            )
+                            .tint(accentColor)
+
+                            // In/Out point markers
+                            GeometryReader { geo in
+                                let duration = max(0.001, viewModel.currentVideoDuration)
+
+                                // In point marker (green)
+                                if let inPt = viewModel.inPoint {
+                                    let position = (inPt / duration) * geo.size.width
+                                    Rectangle()
+                                        .fill(Color.green)
+                                        .frame(width: 3, height: 20)
+                                        .offset(x: position - 1.5, y: -2)
+                                }
+
+                                // Out point marker (red)
+                                if let outPt = viewModel.outPoint {
+                                    let position = (outPt / duration) * geo.size.width
+                                    Rectangle()
+                                        .fill(Color.red)
+                                        .frame(width: 3, height: 20)
+                                        .offset(x: position - 1.5, y: -2)
+                                }
+
+                                // Selected range highlight
+                                if let inPt = viewModel.inPoint, let outPt = viewModel.outPoint {
+                                    let startPos = (inPt / duration) * geo.size.width
+                                    let endPos = (outPt / duration) * geo.size.width
+                                    Rectangle()
+                                        .fill(Color.accentColor.opacity(0.2))
+                                        .frame(width: endPos - startPos, height: 8)
+                                        .offset(x: startPos, y: 4)
+                                }
+                            }
+                        }
+
+                        Text(formatTime(viewModel.currentVideoDuration))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .frame(width: 50, alignment: .leading)
+                    }
+                    .padding(.top, 4)
+                } else if viewModel.totalFrames > 1 {
+                    // Frame scrubber for images
                     HStack(spacing: 8) {
                         Text("\(viewModel.currentFrameIndex + 1)")
                             .font(.caption.monospacedDigit())
@@ -93,13 +158,15 @@ struct PreviewPlayerView: View {
 
                 // Playback Controls
                 HStack(spacing: 12) {
-                    Button(action: viewModel.previousFrame) {
-                        Image(systemName: "backward")
-                            .font(.title3)
+                    if !viewModel.currentItemIsVideo {
+                        Button(action: viewModel.previousFrame) {
+                            Image(systemName: "backward")
+                                .font(.title3)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(viewModel.totalFrames <= 1)
+                        .help("Previous frame")
                     }
-                    .buttonStyle(.plain)
-                    .disabled(viewModel.totalFrames <= 1)
-                    .help("Previous frame")
 
                     Button(action: viewModel.togglePlayback) {
                         Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
@@ -107,16 +174,105 @@ struct PreviewPlayerView: View {
                             .frame(width: 38, height: 38)
                     }
                     .buttonStyle(.plain)
-                    .disabled(viewModel.totalFrames <= 1)
+                    .disabled(!viewModel.currentItemIsVideo && viewModel.totalFrames <= 1)
                     .help(viewModel.isPlaying ? "Pause" : "Play")
 
-                    Button(action: viewModel.nextFrame) {
-                        Image(systemName: "forward")
-                            .font(.title3)
+                    if !viewModel.currentItemIsVideo {
+                        Button(action: viewModel.nextFrame) {
+                            Image(systemName: "forward")
+                                .font(.title3)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(viewModel.totalFrames <= 1)
+                        .help("Next frame")
                     }
-                    .buttonStyle(.plain)
-                    .disabled(viewModel.totalFrames <= 1)
-                    .help("Next frame")
+                }
+
+                // In/Out Point Controls (Video only)
+                if viewModel.currentItemIsVideo {
+                    VStack(spacing: 8) {
+                        Divider()
+                            .padding(.vertical, 4)
+
+                        HStack(spacing: 12) {
+                            // In Point controls
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 6) {
+                                    Button(action: viewModel.setInPoint) {
+                                        Label("Set In", systemImage: "arrowtriangle.right.fill")
+                                            .font(.caption)
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                    .tint(.green)
+
+                                    if viewModel.inPoint != nil {
+                                        Button(action: viewModel.clearInPoint) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.caption)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .foregroundStyle(.secondary)
+                                        .help("Clear in point")
+                                    }
+                                }
+
+                                if let inPt = viewModel.inPoint {
+                                    Button(action: viewModel.seekToInPoint) {
+                                        Text("In: \(formatTime(inPt))")
+                                            .font(.caption2.monospacedDigit())
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+
+                            Spacer()
+
+                            // Out Point controls
+                            VStack(alignment: .trailing, spacing: 4) {
+                                HStack(spacing: 6) {
+                                    if viewModel.outPoint != nil {
+                                        Button(action: viewModel.clearOutPoint) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.caption)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .foregroundStyle(.secondary)
+                                        .help("Clear out point")
+                                    }
+
+                                    Button(action: viewModel.setOutPoint) {
+                                        Label("Set Out", systemImage: "arrowtriangle.left.fill")
+                                            .font(.caption)
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                    .tint(.red)
+                                }
+
+                                if let outPt = viewModel.outPoint {
+                                    Button(action: viewModel.seekToOutPoint) {
+                                        Text("Out: \(formatTime(outPt))")
+                                            .font(.caption2.monospacedDigit())
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+
+                        // Clear all button
+                        if viewModel.inPoint != nil || viewModel.outPoint != nil {
+                            Button(action: viewModel.clearInOutPoints) {
+                                Label("Clear All Points", systemImage: "trash")
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.borderless)
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.top, 4)
                 }
             }
             .padding(.horizontal, 16)
@@ -133,6 +289,13 @@ struct PreviewPlayerView: View {
 }
 
 private extension PreviewPlayerView {
+    func formatTime(_ seconds: Double) -> String {
+        guard seconds.isFinite && seconds >= 0 else { return "00:00" }
+        let minutes = Int(seconds) / 60
+        let secs = Int(seconds) % 60
+        return String(format: "%02d:%02d", minutes, secs)
+    }
+
     @ViewBuilder
     var footerInfoView: some View {
         if let item = viewModel.currentImageItem {

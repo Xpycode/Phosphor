@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import AVFoundation
 
 @MainActor
 class AppViewModel: ObservableObject {
@@ -22,6 +23,12 @@ class AppViewModel: ObservableObject {
     @Published var importProgress: Double = 0.0
     @Published var importTaskID = UUID()
     private var currentImportTask: Task<Void, Never>?
+
+    // Video playback properties
+    @Published var currentVideoTime: Double = 0.0
+    @Published var inPoint: Double? = nil
+    @Published var outPoint: Double? = nil
+    @Published var isVideoMode: Bool = false
 
     private var playbackTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -50,6 +57,59 @@ class AppViewModel: ObservableObject {
 
     var totalFrames: Int {
         sortedImages.count
+    }
+
+    var currentItemIsVideo: Bool {
+        currentImageItem?.isVideo ?? false
+    }
+
+    var currentVideoDuration: Double {
+        currentImageItem?.duration ?? 0.0
+    }
+
+    // MARK: - Video In/Out Point Methods
+
+    func setInPoint() {
+        guard currentItemIsVideo else { return }
+        inPoint = currentVideoTime
+        // Ensure in point is before out point
+        if let out = outPoint, currentVideoTime > out {
+            outPoint = nil
+        }
+    }
+
+    func setOutPoint() {
+        guard currentItemIsVideo else { return }
+        outPoint = currentVideoTime
+        // Ensure out point is after in point
+        if let inPt = inPoint, currentVideoTime < inPt {
+            inPoint = nil
+        }
+    }
+
+    func clearInPoint() {
+        inPoint = nil
+    }
+
+    func clearOutPoint() {
+        outPoint = nil
+    }
+
+    func clearInOutPoints() {
+        inPoint = nil
+        outPoint = nil
+    }
+
+    func seekToInPoint() {
+        if let inPt = inPoint {
+            currentVideoTime = inPt
+        }
+    }
+
+    func seekToOutPoint() {
+        if let outPt = outPoint {
+            currentVideoTime = outPt
+        }
     }
 
     init() {
@@ -222,6 +282,14 @@ class AppViewModel: ObservableObject {
     func seekToFrame(_ index: Int) {
         guard index >= 0 && index < sortedImages.count else { return }
         currentFrameIndex = index
+        updateVideoMode()
+        // Reset video time and clear in/out points when switching items
+        currentVideoTime = 0.0
+        clearInOutPoints()
+    }
+
+    private func updateVideoMode() {
+        isVideoMode = currentItemIsVideo
     }
 
     // MARK: - Export

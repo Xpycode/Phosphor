@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
 import CoreGraphics
+import AVFoundation
 
 struct ImageItem: Identifiable, Equatable {
     let id = UUID()
@@ -17,6 +18,8 @@ struct ImageItem: Identifiable, Equatable {
     let resolution: CGSize
     let fileSize: Int64
     let modificationDate: Date
+    let isVideo: Bool
+    let duration: Double?
 
     var fileName: String {
         url.lastPathComponent
@@ -45,6 +48,16 @@ struct ImageItem: Identifiable, Equatable {
             types.append(tga)
         }
 
+        // Add video formats
+        types.append(contentsOf: [
+            .movie,
+            .video,
+            .mpeg4Movie,
+            .quickTimeMovie,
+            .mpeg2Video,
+            .appleProtectedMPEG4Video
+        ])
+
         return types
     }()
 
@@ -54,7 +67,6 @@ struct ImageItem: Identifiable, Equatable {
 
     static func from(url: URL) -> ImageItem? {
         guard isSupported(url: url) else { return nil }
-        guard let image = NSImage(contentsOf: url) else { return nil }
 
         // Get file attributes
         var fileSize: Int64 = 0
@@ -64,6 +76,24 @@ struct ImageItem: Identifiable, Equatable {
             fileSize = attributes[.size] as? Int64 ?? 0
             modificationDate = attributes[.modificationDate] as? Date ?? Date()
         }
+
+        // Check if this is a video file
+        if isVideoFile(url: url) {
+            return fromVideo(url: url, fileSize: fileSize, modificationDate: modificationDate)
+        } else {
+            return fromImage(url: url, fileSize: fileSize, modificationDate: modificationDate)
+        }
+    }
+
+    private static func isVideoFile(url: URL) -> Bool {
+        guard let type = UTType(filenameExtension: url.pathExtension.lowercased()) else {
+            return false
+        }
+        return type.conforms(to: .movie) || type.conforms(to: .video)
+    }
+
+    private static func fromImage(url: URL, fileSize: Int64, modificationDate: Date) -> ImageItem? {
+        guard let image = NSImage(contentsOf: url) else { return nil }
 
         // Get image resolution
         let resolution = image.size
@@ -77,7 +107,48 @@ struct ImageItem: Identifiable, Equatable {
             thumbnail: thumbnail,
             resolution: resolution,
             fileSize: fileSize,
-            modificationDate: modificationDate
+            modificationDate: modificationDate,
+            isVideo: false,
+            duration: nil
+        )
+    }
+
+    private static func fromVideo(url: URL, fileSize: Int64, modificationDate: Date) -> ImageItem? {
+        let asset = AVAsset(url: url)
+
+        // Get video duration
+        let duration = asset.duration.seconds
+
+        // Get video resolution
+        guard let videoTrack = asset.tracks(withMediaType: .video).first else { return nil }
+        let size = videoTrack.naturalSize.applying(videoTrack.preferredTransform)
+        let resolution = CGSize(width: abs(size.width), height: abs(size.height))
+
+        // Generate thumbnail
+        let imageGenerator = AVAssetImageGenerator(asset: asset)
+        imageGenerator.appliesPreferredTrackTransform = true
+        imageGenerator.requestedTimeToleranceBefore = .zero
+        imageGenerator.requestedTimeToleranceAfter = .zero
+
+        var thumbnail: NSImage?
+        do {
+            let cgImage = try imageGenerator.copyCGImage(at: CMTime(seconds: 0, preferredTimescale: 600), actualTime: nil)
+            let nsImage = NSImage(cgImage: cgImage, size: resolution)
+            let thumbnailSize = CGSize(width: 60, height: 60)
+            thumbnail = nsImage.resized(to: thumbnailSize)
+        } catch {
+            // If thumbnail generation fails, use nil
+            thumbnail = nil
+        }
+
+        return ImageItem(
+            url: url,
+            thumbnail: thumbnail,
+            resolution: resolution,
+            fileSize: fileSize,
+            modificationDate: modificationDate,
+            isVideo: true,
+            duration: duration
         )
     }
 }
