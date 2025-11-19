@@ -1,0 +1,22 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="using:PhosphorWindows.Converters"
+             x:Class="PhosphorWindows.App"
+             RequestedThemeVariant="Default">
+    <Application.Resources>
+        <converters:EnumToIndexConverter x:Key="EnumToIndexConverter"/>
+        <converters:GreaterThanConverter x:Key="GreaterThanConverter"/>
+        <converters:AddOneConverter x:Key="AddOneConverter"/>
+        <converters:SubtractOneConverter x:Key="SubtractOneConverter"/>
+        <converters:PlayPauseTextConverter x:Key="PlayPauseTextConverter"/>
+        <converters:NotNullConverter x:Key="NotNullConverter"/>
+        <converters:IsZeroConverter x:Key="IsZeroConverter"/>
+        <converters:NotZeroConverter x:Key="NotZeroConverter"/>
+        <converters:PercentageConverter x:Key="PercentageConverter"/>
+        <converters:IsCustomModeConverter x:Key="IsCustomModeConverter"/>
+    </Application.Resources>
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://PhosphorWindows/Styles/CustomStyles.axaml"/>
+    </Application.Styles>
+</Application>

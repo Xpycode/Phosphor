@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PhosphorWindows.ViewModels"
+             xmlns:models="using:PhosphorWindows.Models"
+             x:Class="PhosphorWindows.Views.FileListPanel"
+             x:DataType="vm:AppViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+        <!-- Header -->
+        <TextBlock Grid.Row="0"
+                   Text="Images"
+                   FontWeight="SemiBold"
+                   FontSize="14"
+                   HorizontalAlignment="Center"
+                   Padding="12"
+                   Height="40"/>
+
+        <Separator Grid.Row="1"/>
+
+        <!-- Sort Order -->
+        <StackPanel Grid.Row="2" Margin="12,10,12,16" HorizontalAlignment="Center">
+            <ComboBox Width="200"
+                      SelectedIndex="{Binding SortOrder, Converter={StaticResource EnumToIndexConverter}}">
+                <ComboBoxItem Content="File Name"/>
+                <ComboBoxItem Content="Modified"/>
+                <ComboBoxItem Content="Manual"/>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- File List -->
+        <ScrollViewer Grid.Row="3">
+            <ItemsControl ItemsSource="{Binding SortedImages}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="models:ImageItem">
+                        <Border Padding="6"
+                                MinHeight="72"
+                                Background="Transparent"
+                                PointerPressed="Item_PointerPressed">
+                            <Grid ColumnDefinitions="35,Auto,*,Auto">
+                                <!-- Frame number -->
+                                <TextBlock Grid.Column="0"
+                                          Text="{Binding $index, StringFormat='#{0}'}"
+                                          FontSize="11"
+                                          FontWeight="SemiBold"
+                                          VerticalAlignment="Center"
+                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+
+                                <!-- Thumbnail -->
+                                <Border Grid.Column="1"
+                                       Width="100" Height="60"
+                                       Margin="0,0,8,0"
+                                       CornerRadius="4"
+                                       ClipToBounds="True">
+                                    <Image Source="{Binding Thumbnail}"
+                                          Stretch="UniformToFill"/>
+                                </Border>
+
+                                <!-- File Info -->
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
+                                    <TextBlock Text="{Binding FileName}"
+                                              FontSize="12"
+                                              TextTrimming="CharacterEllipsis"
+                                              MaxWidth="150"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding ResolutionString}"
+                                                  FontSize="10"
+                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="•"
+                                                  FontSize="10"
+                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding FileSizeFormatted}"
+                                                  FontSize="10"
+                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Remove Button -->
+                                <Button Grid.Column="3"
+                                       Content="✕"
+                                       Width="24" Height="24"
+                                       VerticalAlignment="Center"
+                                       Click="RemoveButton_Click"
+                                       Tag="{Binding}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <Separator Grid.Row="4"/>
+
+        <!-- Bottom Toolbar -->
+        <Grid Grid.Row="5" Height="60" ColumnDefinitions="*,Auto,*" Margin="16,0">
+            <Button Grid.Column="0"
+                   Content="Add Images"
+                   HorizontalAlignment="Left"
+                   Click="AddImages_Click"/>
+
+            <TextBlock Grid.Column="1"
+                      VerticalAlignment="Center"
+                      FontSize="11"
+                      Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                <Run Text="{Binding TotalFrames}"/>
+                <Run Text=" items"/>
+            </TextBlock>
+
+            <Button Grid.Column="2"
+                   Content="Clear All"
+                   HorizontalAlignment="Right"
+                   Command="{Binding ClearAllCommand}"/>
+        </Grid>
+    </Grid>
+</UserControl>

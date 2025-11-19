@@ -1,0 +1,173 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PhosphorWindows.ViewModels"
+             x:Class="PhosphorWindows.Views.SettingsPanel"
+             x:DataType="vm:AppViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <!-- Header -->
+        <TextBlock Grid.Row="0"
+                   Text="Export"
+                   FontWeight="SemiBold"
+                   FontSize="14"
+                   HorizontalAlignment="Center"
+                   Padding="12"
+                   Height="40"/>
+
+        <Separator Grid.Row="1"/>
+
+        <!-- Settings -->
+        <ScrollViewer Grid.Row="2">
+            <StackPanel Margin="16" Spacing="16">
+                <!-- Timing Settings -->
+                <Border Classes="panel" Padding="12">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="section-header" Text="Timing"/>
+
+                        <!-- Frame Rate -->
+                        <StackPanel Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Frame Rate" FontSize="11"/>
+                                <TextBlock Grid.Column="1" FontSize="11">
+                                    <Run Text="{Binding FrameRate, StringFormat='{}{0:F0}'}"/>
+                                    <Run Text=" FPS"/>
+                                </TextBlock>
+                            </Grid>
+                            <Slider Minimum="1" Maximum="60"
+                                   Value="{Binding FrameRate}"
+                                   TickFrequency="1"
+                                   IsSnapToTickEnabled="True"/>
+                        </StackPanel>
+
+                        <!-- Frame Delay -->
+                        <StackPanel Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Frame Delay" FontSize="11"/>
+                                <TextBlock Grid.Column="1" FontSize="11">
+                                    <Run Text="{Binding FrameDelay, StringFormat='{}{0:F0}'}"/>
+                                    <Run Text=" ms"/>
+                                </TextBlock>
+                            </Grid>
+                            <Slider Minimum="16.67" Maximum="1000"
+                                   Value="{Binding FrameDelay}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Loop Count -->
+                <Border Classes="panel" Padding="12">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                        <TextBlock Text="Loop Count" FontSize="11" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="Infinite"
+                                  FontSize="11"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Right"
+                                  Margin="0,0,8,0"/>
+                        <ToggleSwitch Grid.Column="2"
+                                     IsChecked="{Binding LoopCount, Converter={StaticResource IsZeroConverter}}"
+                                     Margin="0,0,12,0"/>
+                        <NumericUpDown Grid.Column="3"
+                                      Width="80"
+                                      Minimum="1"
+                                      Maximum="100"
+                                      Value="{Binding LoopCount}"
+                                      IsEnabled="{Binding LoopCount, Converter={StaticResource NotZeroConverter}}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Quality Settings -->
+                <Border Classes="panel" Padding="12">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="section-header" Text="Quality"/>
+
+                        <StackPanel Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Quality" FontSize="11"/>
+                                <TextBlock Grid.Column="1" FontSize="11">
+                                    <Run Text="{Binding Quality, Converter={StaticResource PercentageConverter}}"/>
+                                    <Run Text="%"/>
+                                </TextBlock>
+                            </Grid>
+                            <Slider Minimum="0.1" Maximum="1.0"
+                                   Value="{Binding Quality}"
+                                   TickFrequency="0.05"
+                                   IsSnapToTickEnabled="True"/>
+                        </StackPanel>
+
+                        <CheckBox Content="Enable Dithering"
+                                 IsChecked="{Binding EnableDithering}"
+                                 FontSize="11"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Export Format -->
+                <Border Classes="panel" Padding="12">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Export Format" FontSize="11"/>
+                        <ComboBox SelectedIndex="{Binding Format, Converter={StaticResource EnumToIndexConverter}}"
+                                 HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="GIF"/>
+                            <ComboBoxItem Content="WebP"/>
+                            <ComboBoxItem Content="APNG"/>
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- Resize Settings -->
+                <Border Classes="panel" Padding="12">
+                    <StackPanel Spacing="12">
+                        <CheckBox Content="Resize Output"
+                                 IsChecked="{Binding ResizeEnabled}"
+                                 FontSize="11"/>
+
+                        <StackPanel Spacing="8" IsVisible="{Binding ResizeEnabled}">
+                            <ComboBox SelectedIndex="{Binding ResizeMode, Converter={StaticResource EnumToIndexConverter}}"
+                                     Width="180">
+                                <ComboBoxItem Content="Common"/>
+                                <ComboBoxItem Content="Custom"/>
+                            </ComboBox>
+
+                            <!-- Custom Size -->
+                            <Grid ColumnDefinitions="*,12,*" IsVisible="{Binding ResizeMode, Converter={StaticResource IsCustomModeConverter}}">
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="Width" FontSize="10"/>
+                                    <NumericUpDown Value="{Binding ResizeWidth}"
+                                                  Minimum="64" Maximum="4096"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="4">
+                                    <TextBlock Text="Height" FontSize="10"/>
+                                    <NumericUpDown Value="{Binding ResizeHeight}"
+                                                  Minimum="64" Maximum="4096"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <CheckBox Content="Maintain aspect ratio"
+                                     IsChecked="{Binding MaintainAspectRatio}"
+                                     FontSize="11"
+                                     IsVisible="{Binding ResizeMode, Converter={StaticResource IsCustomModeConverter}}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Separator Grid.Row="3"/>
+
+        <!-- Export Button -->
+        <Grid Grid.Row="4" Height="60" Margin="16,0">
+            <ProgressBar Value="{Binding ExportProgress}"
+                        Minimum="0" Maximum="1"
+                        IsVisible="{Binding IsExporting}"
+                        Height="32"/>
+
+            <Button Content="Export Animation"
+                   HorizontalAlignment="Stretch"
+                   HorizontalContentAlignment="Center"
+                   Height="40"
+                   Classes="accent"
+                   Click="Export_Click"
+                   IsVisible="{Binding !IsExporting}"
+                   IsEnabled="{Binding TotalFrames, Converter={StaticResource GreaterThanConverter}, ConverterParameter=0}"/>
+        </Grid>
+    </Grid>
+</UserControl>

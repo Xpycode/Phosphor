@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PhosphorWindows.ViewModels"
+             x:Class="PhosphorWindows.Views.PreviewPanel"
+             x:DataType="vm:AppViewModel">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+        <!-- Header -->
+        <TextBlock Grid.Row="0"
+                   Text="Preview"
+                   FontWeight="SemiBold"
+                   FontSize="14"
+                   HorizontalAlignment="Center"
+                   Padding="12"
+                   Height="40"/>
+
+        <Separator Grid.Row="1"/>
+
+        <!-- Preview Area -->
+        <Border Grid.Row="2" Background="{DynamicResource SystemChromeLowColor}">
+            <Image Source="{Binding CurrentImage}"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+        </Border>
+
+        <Separator Grid.Row="3"/>
+
+        <!-- Playback Controls -->
+        <StackPanel Grid.Row="4" Margin="16,12" Spacing="8">
+            <!-- Scrubber -->
+            <Grid ColumnDefinitions="40,*,40" IsVisible="{Binding TotalFrames, Converter={StaticResource GreaterThanConverter}, ConverterParameter=1}">
+                <TextBlock Grid.Column="0"
+                          Text="{Binding CurrentFrameIndex, Converter={StaticResource AddOneConverter}}"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Center"
+                          FontSize="11"
+                          Margin="0,0,8,0"/>
+
+                <Slider Grid.Column="1"
+                       Minimum="0"
+                       Maximum="{Binding TotalFrames, Converter={StaticResource SubtractOneConverter}}"
+                       Value="{Binding CurrentFrameIndex}"
+                       TickFrequency="1"
+                       IsSnapToTickEnabled="True"/>
+
+                <TextBlock Grid.Column="2"
+                          Text="{Binding TotalFrames}"
+                          HorizontalAlignment="Left"
+                          VerticalAlignment="Center"
+                          FontSize="11"
+                          Margin="8,0,0,0"/>
+            </Grid>
+
+            <!-- Transport Controls -->
+            <StackPanel Orientation="Horizontal"
+                       HorizontalAlignment="Center"
+                       Spacing="16">
+                <Button Content="◄"
+                       Width="40" Height="40"
+                       FontSize="16"
+                       Click="Previous_Click"
+                       IsEnabled="{Binding TotalFrames, Converter={StaticResource GreaterThanConverter}, ConverterParameter=1}"/>
+
+                <Button Width="50" Height="50"
+                       FontSize="20"
+                       Click="PlayPause_Click"
+                       IsEnabled="{Binding TotalFrames, Converter={StaticResource GreaterThanConverter}, ConverterParameter=1}">
+                    <TextBlock Text="{Binding IsPlaying, Converter={StaticResource PlayPauseTextConverter}}"/>
+                </Button>
+
+                <Button Content="►"
+                       Width="40" Height="40"
+                       FontSize="16"
+                       Click="Next_Click"
+                       IsEnabled="{Binding TotalFrames, Converter={StaticResource GreaterThanConverter}, ConverterParameter=1}"/>
+            </StackPanel>
+        </StackPanel>
+
+        <Separator Grid.Row="5"/>
+
+        <!-- Footer Info -->
+        <Grid Grid.Row="6" Height="60" Margin="16,0" RowDefinitions="Auto,Auto">
+            <StackPanel Grid.Row="0" Spacing="4" IsVisible="{Binding CurrentImageItem, Converter={StaticResource NotNullConverter}}">
+                <TextBlock Text="{Binding CurrentImageItem.FileName}"
+                          FontSize="11"
+                          TextTrimming="CharacterEllipsis"/>
+                <TextBlock FontSize="10"
+                          Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                    <Run Text="{Binding CurrentImageItem.ResolutionString}"/>
+                    <Run Text=" • "/>
+                    <Run Text="{Binding CurrentImageItem.FileSizeFormatted}"/>
+                </TextBlock>
+            </StackPanel>
+
+            <TextBlock Grid.Row="1"
+                      VerticalAlignment="Bottom"
+                      FontSize="10"
+                      Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                      IsVisible="{Binding CurrentImageItem, Converter={StaticResource NotNullConverter}}">
+                <Run Text="Frame "/>
+                <Run Text="{Binding CurrentFrameIndex, Converter={StaticResource AddOneConverter}}"/>
+                <Run Text=" of "/>
+                <Run Text="{Binding TotalFrames}"/>
+            </TextBlock>
+        </Grid>
+    </Grid>
+</UserControl>
