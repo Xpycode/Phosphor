@@ -36,8 +36,8 @@ struct GIFExporter {
         to url: URL,
         frameDelay: Double,
         loopCount: Int,
-        quality: Double,
-        dithering: Bool,
+        quality _: Double,
+        dithering _: Bool,
         resizeConfiguration: ExportResizeConfiguration?,
         progressHandler: @escaping (Double) -> Void
     ) async throws {

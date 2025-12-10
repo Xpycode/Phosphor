@@ -30,9 +30,6 @@ struct FileListView: View {
             HStack {
                 Spacer()
 
-                HStack(spacing: 8) {
-                   
-
                 Picker("", selection: $viewModel.settings.sortOrder) {
                     Text("File Name").tag(SortOrder.fileName)
                     Text("Modified").tag(SortOrder.modificationDate)
@@ -41,7 +38,6 @@ struct FileListView: View {
                 .labelsHidden()
                 .pickerStyle(.segmented)
                 .tint(accentColor)
-                }
 
                 Spacer()
             }
@@ -302,17 +298,6 @@ struct FileItemRow: View {
         .contentShape(Rectangle())
         .onTapGesture {
             viewModel.seekToFrame(index)
-        }
-    }
-}
-
-// MARK: - View Extension for Conditional Modifiers
-extension View {
-    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
         }
     }
 }

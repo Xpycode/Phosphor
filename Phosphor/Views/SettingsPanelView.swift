@@ -80,9 +80,9 @@ struct SettingsPanelView: View {
                                     value: steppedBinding(
                                         $viewModel.settings.frameDelay,
                                         step: 1,
-                                        range: (1000.0 / 60.0)...1000.0
+                                        range: ExportConstants.frameDelayRange
                                     ),
-                                    in: (1000.0 / 60.0)...1000.0
+                                    in: ExportConstants.frameDelayRange
                                 )
                                 .controlSize(.regular)
                                 .tint(accentColor)
@@ -451,8 +451,8 @@ struct SettingsPanelView: View {
         )
     }
 
-private func exportAnimation() {
-    let panel = NSSavePanel()
+    private func exportAnimation() {
+        let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: viewModel.settings.format.fileExtension)!]
         panel.nameFieldStringValue = "animation.\(viewModel.settings.format.fileExtension)"
         panel.canCreateDirectories = true
@@ -462,7 +462,6 @@ private func exportAnimation() {
                 do {
                     try await viewModel.exportAnimation(to: url)
                 } catch {
-                    // Show error message
                     await MainActor.run {
                         let alert = NSAlert()
                         alert.messageText = "Export Failed"

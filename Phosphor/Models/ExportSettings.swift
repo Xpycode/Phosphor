@@ -13,6 +13,7 @@ import CoreGraphics
 enum ExportConstants {
     static let dimensionRange: ClosedRange<Double> = 64...4096
     static let frameRateRange: ClosedRange<Double> = 1...60
+    static let frameDelayRange: ClosedRange<Double> = (1000.0 / 60.0)...(1000.0 / 1.0)
     static let qualityRange: ClosedRange<Double> = 0.1...1.0
     static let loopCountRange: ClosedRange<Int> = 1...100
     static let importBatchSize = 8
