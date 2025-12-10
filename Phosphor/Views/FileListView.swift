@@ -12,12 +12,8 @@ struct FileListView: View {
     @ObservedObject var viewModel: AppViewModel
     @State private var isTargeted = false
     @State private var draggingItem: ImageItem?
+    @Environment(\.appAccentColor) private var accentColor
     private let footerHeight: CGFloat = 60
-    @AppStorage("useOrangeAccent") private var useOrangeAccent = false
-
-    private var accentColor: Color {
-        useOrangeAccent ? .orange : Color(nsColor: NSColor.controlAccentColor)
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,7 +22,6 @@ struct FileListView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal)
-            // let frame hight stay at 24
                 .frame(height: 24)
 
             Divider()
@@ -173,34 +168,31 @@ struct FileListView: View {
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        var urls: [URL] = []
+        let group = DispatchGroup()
+        var collectedURLs: [URL] = []
+        let lock = NSLock()
 
         for provider in providers {
             if provider.canLoadObject(ofClass: URL.self) {
-                _ = provider.loadObject(ofClass: URL.self) { url, error in
+                group.enter()
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
                     if let url = url {
-                        DispatchQueue.main.async {
-                            urls.append(url)
-                            if urls.count == providers.count {
-                                viewModel.addImages(from: urls)
-                            }
-                        }
+                        lock.lock()
+                        collectedURLs.append(url)
+                        lock.unlock()
                     }
+                    group.leave()
                 }
             }
         }
 
-        return true
-    }
-}
-
-private struct ClearListBackgroundModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(macOS 13.0, *) {
-            content.scrollContentBackground(.hidden)
-        } else {
-            content
+        group.notify(queue: .main) { [viewModel] in
+            if !collectedURLs.isEmpty {
+                viewModel.addImages(from: collectedURLs)
+            }
         }
+
+        return true
     }
 }
 

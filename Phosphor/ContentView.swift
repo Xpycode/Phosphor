@@ -8,17 +8,26 @@
 import SwiftUI
 import AppKit
 
+// MARK: - Shared Accent Color Environment
+
+private struct AppAccentColorKey: EnvironmentKey {
+    static let defaultValue: Color = Color(nsColor: NSColor.controlAccentColor)
+}
+
+extension EnvironmentValues {
+    var appAccentColor: Color {
+        get { self[AppAccentColorKey.self] }
+        set { self[AppAccentColorKey.self] = newValue }
+    }
+}
+
 struct ContentView: View {
     @StateObject private var viewModel = AppViewModel()
     @AppStorage("prefersLightMode") private var prefersLightMode = false
     @AppStorage("useOrangeAccent") private var useOrangeAccent = false
 
     private var activeAccentColor: Color {
-        if useOrangeAccent {
-            return Color.orange
-        } else {
-            return Color(nsColor: NSColor.controlAccentColor)
-        }
+        useOrangeAccent ? .orange : Color(nsColor: NSColor.controlAccentColor)
     }
 
     var body: some View {
@@ -42,6 +51,7 @@ struct ContentView: View {
         .frame(minWidth: 1040, minHeight: 700)
         .preferredColorScheme(prefersLightMode ? .light : .dark)
         .accentColor(activeAccentColor)
+        .environment(\.appAccentColor, activeAccentColor)
     }
 }
 

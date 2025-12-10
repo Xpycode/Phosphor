@@ -50,23 +50,25 @@ struct APNGExporter {
 
         // Process each image
         for (index, item) in images.enumerated() {
-            guard var nsImage = NSImage(contentsOf: item.url) else {
-                throw ExportError.failedToCreateImage
-            }
+            try autoreleasepool {
+                guard var nsImage = NSImage(contentsOf: item.url) else {
+                    throw ExportError.failedToCreateImage
+                }
 
-            if let resizeConfiguration = resizeConfiguration {
-                nsImage = nsImage.resized(
-                    to: resizeConfiguration.targetSize,
-                    preservingAspectRatio: resizeConfiguration.preserveAspectRatio
-                )
-            }
+                if let resizeConfiguration = resizeConfiguration {
+                    nsImage = nsImage.resized(
+                        to: resizeConfiguration.targetSize,
+                        preservingAspectRatio: resizeConfiguration.preserveAspectRatio
+                    )
+                }
 
-            guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-                throw ExportError.failedToCreateImage
-            }
+                guard let cgImage = nsImage.tiffCGImage else {
+                    throw ExportError.failedToCreateImage
+                }
 
-            // Add frame to APNG
-            CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
+                // Add frame to APNG
+                CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
+            }
 
             // Update progress
             let progress = Double(index + 1) / Double(images.count)

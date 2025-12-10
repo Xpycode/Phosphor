@@ -12,12 +12,8 @@ struct SettingsPanelView: View {
     @ObservedObject var viewModel: AppViewModel
     @State private var lastFiniteLoopCount: Int
     @State private var loopCountText: String
+    @Environment(\.appAccentColor) private var accentColor
     private let footerHeight: CGFloat = 60
-    @AppStorage("useOrangeAccent") private var useOrangeAccent = false
-
-    private var accentColor: Color {
-        useOrangeAccent ? .orange : Color(nsColor: NSColor.controlAccentColor)
-    }
 
     init(viewModel: AppViewModel) {
         self._viewModel = ObservedObject(wrappedValue: viewModel)
@@ -61,9 +57,9 @@ struct SettingsPanelView: View {
                                     value: steppedBinding(
                                         $viewModel.settings.frameRate,
                                         step: 1.0,
-                                        range: 1.0...60.0
+                                        range: ExportConstants.frameRateRange
                                     ),
-                                    in: 1.0...60.0
+                                    in: ExportConstants.frameRateRange
                                 )
                                 .controlSize(.regular)
                                 .tint(accentColor)
@@ -163,9 +159,9 @@ struct SettingsPanelView: View {
                                     value: steppedBinding(
                                         $viewModel.settings.quality,
                                         step: 0.05,
-                                        range: 0.1...1.0
+                                        range: ExportConstants.qualityRange
                                     ),
-                                    in: 0.1...1.0
+                                    in: ExportConstants.qualityRange
                                 )
                                 .controlSize(.regular)
                                 .tint(accentColor)
@@ -298,7 +294,8 @@ struct SettingsPanelView: View {
         .background(Color(NSColor.controlBackgroundColor))
         .onChange(of: viewModel.settings.loopCount) { _, newValue in
             if newValue != 0 {
-                let clamped = max(1, min(newValue, 100))
+                let range = ExportConstants.loopCountRange
+                let clamped = max(range.lowerBound, min(newValue, range.upperBound))
                 lastFiniteLoopCount = clamped
                 loopCountText = String(clamped)
             }
@@ -367,7 +364,7 @@ struct SettingsPanelView: View {
                 }
             },
             set: { newValue in
-                let range: ClosedRange<Double> = 64...4096
+                let range = ExportConstants.dimensionRange
                 let clamped = min(max(newValue, range.lowerBound), range.upperBound)
                 let currentWidth = viewModel.settings.resizeWidth
                 let currentHeight = viewModel.settings.resizeHeight
@@ -376,23 +373,25 @@ struct SettingsPanelView: View {
                 switch dimension {
                 case .width:
                     viewModel.settings.resizeWidth = clamped
-                    adjustHeightIfNeeded(using: aspectRatio, newWidth: clamped, range: range)
+                    adjustHeightIfNeeded(using: aspectRatio, newWidth: clamped)
                 case .height:
                     viewModel.settings.resizeHeight = clamped
-                    adjustWidthIfNeeded(using: aspectRatio, newHeight: clamped, range: range)
+                    adjustWidthIfNeeded(using: aspectRatio, newHeight: clamped)
                 }
             }
         )
     }
 
-    private func adjustHeightIfNeeded(using ratio: Double?, newWidth: Double, range: ClosedRange<Double>) {
+    private func adjustHeightIfNeeded(using ratio: Double?, newWidth: Double) {
         guard shouldMaintainAspect(), let ratio = ratio, ratio.isFinite, ratio > 0 else { return }
+        let range = ExportConstants.dimensionRange
         let newHeight = max(range.lowerBound, min(newWidth / ratio, range.upperBound))
         viewModel.settings.resizeHeight = newHeight.rounded()
     }
 
-    private func adjustWidthIfNeeded(using ratio: Double?, newHeight: Double, range: ClosedRange<Double>) {
+    private func adjustWidthIfNeeded(using ratio: Double?, newHeight: Double) {
         guard shouldMaintainAspect(), let ratio = ratio, ratio.isFinite, ratio > 0 else { return }
+        let range = ExportConstants.dimensionRange
         let newWidth = max(range.lowerBound, min(newHeight * ratio, range.upperBound))
         viewModel.settings.resizeWidth = newWidth.rounded()
     }
@@ -441,7 +440,8 @@ struct SettingsPanelView: View {
 
                 guard let value = Int(filtered) else { return }
 
-                let clamped = max(1, min(value, 100))
+                let range = ExportConstants.loopCountRange
+                let clamped = max(range.lowerBound, min(value, range.upperBound))
                 lastFiniteLoopCount = clamped
 
                 if viewModel.settings.loopCount != 0 {

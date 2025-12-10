@@ -10,6 +10,12 @@ import SwiftUI
 import UniformTypeIdentifiers
 import CoreGraphics
 
+// MARK: - Constants
+
+enum ImageConstants {
+    static let thumbnailSize = CGSize(width: 60, height: 60)
+}
+
 struct ImageItem: Identifiable, Equatable {
     let id = UUID()
     let url: URL
@@ -69,8 +75,7 @@ struct ImageItem: Identifiable, Equatable {
         let resolution = image.size
 
         // Create thumbnail
-        let thumbnailSize = CGSize(width: 60, height: 60)
-        let thumbnail = image.resized(to: thumbnailSize)
+        let thumbnail = image.resized(to: ImageConstants.thumbnailSize)
 
         return ImageItem(
             url: url,

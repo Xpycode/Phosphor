@@ -8,6 +8,16 @@
 import Foundation
 import CoreGraphics
 
+// MARK: - Export Constants
+
+enum ExportConstants {
+    static let dimensionRange: ClosedRange<Double> = 64...4096
+    static let frameRateRange: ClosedRange<Double> = 1...60
+    static let qualityRange: ClosedRange<Double> = 0.1...1.0
+    static let loopCountRange: ClosedRange<Int> = 1...100
+    static let importBatchSize = 8
+}
+
 enum ExportFormat: String, CaseIterable {
     case gif = "GIF"
     case webp = "WebP"
@@ -101,7 +111,6 @@ class ExportSettings: ObservableObject {
     @Published var maintainAspectRatio: Bool = true
 
     private var isUpdating = false
-    private let frameRateRange: ClosedRange<Double> = 1...60
 
     // Computed property to sync frame rate with delay
     var computedFrameDelay: Double {
@@ -144,7 +153,7 @@ class ExportSettings: ObservableObject {
     }
 
     private func snapFrameRate(_ value: Double) -> Double {
-        min(max(value.rounded(), frameRateRange.lowerBound), frameRateRange.upperBound)
+        min(max(value.rounded(), ExportConstants.frameRateRange.lowerBound), ExportConstants.frameRateRange.upperBound)
     }
 
     var activeResizeConfiguration: ExportResizeConfiguration? {

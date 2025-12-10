@@ -73,23 +73,25 @@ struct GIFExporter {
 
         // Process each image
         for (index, item) in images.enumerated() {
-            guard var nsImage = NSImage(contentsOf: item.url) else {
-                throw ExportError.failedToCreateImage
-            }
+            try autoreleasepool {
+                guard var nsImage = NSImage(contentsOf: item.url) else {
+                    throw ExportError.failedToCreateImage
+                }
 
-            if let resizeConfiguration = resizeConfiguration {
-                nsImage = nsImage.resized(
-                    to: resizeConfiguration.targetSize,
-                    preservingAspectRatio: resizeConfiguration.preserveAspectRatio
-                )
-            }
+                if let resizeConfiguration = resizeConfiguration {
+                    nsImage = nsImage.resized(
+                        to: resizeConfiguration.targetSize,
+                        preservingAspectRatio: resizeConfiguration.preserveAspectRatio
+                    )
+                }
 
-            guard let cgImage = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-                throw ExportError.failedToCreateImage
-            }
+                guard let cgImage = nsImage.tiffCGImage else {
+                    throw ExportError.failedToCreateImage
+                }
 
-            // Add frame to GIF
-            CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
+                // Add frame to GIF
+                CGImageDestinationAddImage(destination, cgImage, frameProperties as CFDictionary)
+            }
 
             // Update progress
             let progress = Double(index + 1) / Double(images.count)
@@ -106,7 +108,9 @@ struct GIFExporter {
 }
 
 extension NSImage {
-    func cgImage(forProposedRect proposedDestRect: UnsafeMutablePointer<NSRect>?, context: NSGraphicsContext?, hints: [NSImageRep.HintKey: Any]?) -> CGImage? {
+    /// Converts NSImage to CGImage using TIFF representation.
+    /// Named to avoid shadowing the native NSImage.cgImage(forProposedRect:context:hints:) method.
+    var tiffCGImage: CGImage? {
         guard let imageData = self.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: imageData) else {
             return nil

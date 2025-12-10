@@ -9,12 +9,8 @@ import SwiftUI
 
 struct PreviewPlayerView: View {
     @ObservedObject var viewModel: AppViewModel
+    @Environment(\.appAccentColor) private var accentColor
     private let footerHeight: CGFloat = 60
-    @AppStorage("useOrangeAccent") private var useOrangeAccent = false
-
-    private var accentColor: Color {
-        useOrangeAccent ? .orange : Color(nsColor: NSColor.controlAccentColor)
-    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,7 +19,6 @@ struct PreviewPlayerView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal)
-            // let frame hight stay at 24
                 .frame(height: 24)
 
             Divider()

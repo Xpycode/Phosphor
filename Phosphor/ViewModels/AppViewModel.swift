@@ -69,9 +69,7 @@ class AppViewModel: ObservableObject {
             .dropFirst()
             .removeDuplicates()
             .sink { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.settings.updateDelayFromFrameRate()
-                }
+                self?.settings.updateDelayFromFrameRate()
             }
             .store(in: &cancellables)
 
@@ -79,8 +77,10 @@ class AppViewModel: ObservableObject {
             .dropFirst()
             .removeDuplicates()
             .sink { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.settings.updateFrameRateFromDelay()
+                self?.settings.updateFrameRateFromDelay()
+                // Reschedule timer if playback is active
+                if self?.isPlaying == true {
+                    self?.restartPlaybackTimer()
                 }
             }
             .store(in: &cancellables)
@@ -89,15 +89,28 @@ class AppViewModel: ObservableObject {
             .dropFirst()
             .sink { [weak self] newOrder in
                 guard let self = self else { return }
-                DispatchQueue.main.async {
-                    if newOrder == .manual {
-                        self.applyAutomaticSort(order: self.lastAutomaticSortOrder)
-                    } else {
-                        self.lastAutomaticSortOrder = newOrder
-                    }
+                // Preserve current image across sort order changes
+                let currentImageID = self.currentImageItem?.id
+
+                if newOrder == .manual {
+                    self.applyAutomaticSort(order: self.lastAutomaticSortOrder)
+                } else {
+                    self.lastAutomaticSortOrder = newOrder
+                }
+
+                // Restore frame index to point to the same image
+                if let currentImageID = currentImageID,
+                   let newIndex = self.sortedImages.firstIndex(where: { $0.id == currentImageID }) {
+                    self.currentFrameIndex = newIndex
                 }
             }
             .store(in: &cancellables)
+    }
+
+    deinit {
+        playbackTimer?.invalidate()
+        playbackTimer = nil
+        currentImportTask?.cancel()
     }
 
     func addImages(from urls: [URL]) {
@@ -126,7 +139,7 @@ class AppViewModel: ObservableObject {
                     }
                 }
 
-                if importBuffer.count == 8 || index == urlsCopy.count - 1 || Task.isCancelled {
+                if importBuffer.count == ExportConstants.importBatchSize || index == urlsCopy.count - 1 || Task.isCancelled {
                     let flushedItems = importBuffer
                     importBuffer.removeAll(keepingCapacity: true)
 
@@ -193,7 +206,10 @@ class AppViewModel: ObservableObject {
     func startPlayback() {
         guard !sortedImages.isEmpty else { return }
         isPlaying = true
+        restartPlaybackTimer()
+    }
 
+    private func restartPlaybackTimer() {
         playbackTimer?.invalidate()
         playbackTimer = Timer.scheduledTimer(withTimeInterval: settings.frameDelay / 1000.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
