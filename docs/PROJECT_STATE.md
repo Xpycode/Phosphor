@@ -84,11 +84,13 @@
 - ✅ Fixed live preview updates (observe ExportSettings directly)
 - ✅ Build succeeds, app runs
 
+### Verified:
+- ✅ GIF export works with canvas-aware Fit/Fill modes
+
 ### Ready for Phase 9:
-- End-to-end testing with real images
-- Test GIF export with Fit mode (verify letterbox background)
 - Test APNG export with Fit mode (verify transparency)
-- Verify file size reduction with presets
+- Consider aspect ratio lock for Custom mode
+- Per-frame rotation (optional)
 
 ## Key Decisions Made
 [See decisions.md for full history]
@@ -108,8 +110,9 @@ None - ready to implement
 7. [x] Phase 6: Export integration ✅
 8. [x] Phase 7: Enhanced resize (Fit/Fill, presets) ✅
 9. [x] Phase 8: Canvas-aware preview ✅
-10. [ ] **Test exports end-to-end** (critical!)
-11. [ ] Polish and bug fixes
+10. [x] GIF export verified ✅
+11. [ ] Test APNG export
+12. [ ] Polish and bug fixes
 
 ## Git State
 - Branch: `feature/6-pane-workspace` (buggy, to be replaced)
