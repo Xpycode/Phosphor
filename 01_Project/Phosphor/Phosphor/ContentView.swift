@@ -15,7 +15,7 @@ struct ContentView: View {
             // Left column: Preview (top) + Toolbar + Timeline (bottom)
             GeometryReader { geometry in
                 VStack(spacing: 0) {
-                    PreviewPane(appState: appState)
+                    PreviewPane(appState: appState, settings: appState.exportSettings)
                         .frame(minHeight: 300)
 
                     TimelineToolbar(

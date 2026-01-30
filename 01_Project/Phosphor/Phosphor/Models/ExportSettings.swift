@@ -78,7 +78,7 @@ enum ResizeInstruction {
 }
 
 enum CanvasMode: String, CaseIterable, Identifiable {
-    case automatic
+    case original  // Use source image dimensions (no resize)
     case preset
     case custom
 
@@ -86,7 +86,7 @@ enum CanvasMode: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .automatic: return "Auto"
+        case .original: return "Original"
         case .preset: return "Preset"
         case .custom: return "Custom"
         }
@@ -205,7 +205,7 @@ class ExportSettings: ObservableObject {
     @Published var enableDithering: Bool = true
     @Published var sortOrder: SortOrder = .fileName
     @Published var resizeEnabled: Bool = false
-    @Published var canvasMode: CanvasMode = .automatic
+    @Published var canvasMode: CanvasMode = .original
     @Published var canvasWidth: Double = 640
     @Published var canvasHeight: Double = 480
     @Published var automaticCanvasSize: CGSize?
@@ -269,7 +269,10 @@ class ExportSettings: ObservableObject {
     }
 
     var resizeInstruction: ResizeInstruction? {
-        guard resizeEnabled, let target = resolvedCanvasSize else { return nil }
+        // Original mode = no resize
+        guard canvasMode != .original else { return nil }
+        guard let target = resolvedCanvasSize else { return nil }
+
         switch scaleMode {
         case .fill:
             return .fill(size: target)
@@ -280,7 +283,7 @@ class ExportSettings: ObservableObject {
 
     var resolvedCanvasSize: CGSize? {
         switch canvasMode {
-        case .automatic:
+        case .original:
             return automaticCanvasSize
         case .preset:
             guard let presetID = selectedPresetID,

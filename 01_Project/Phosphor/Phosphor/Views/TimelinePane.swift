@@ -30,19 +30,15 @@ struct TimelinePane: View {
     }
 
     private var emptyStateView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "photo.on.rectangle.angled")
-                .font(.system(size: 40))
-                .foregroundColor(.secondary)
+        // Drop zone indicator only - import button is in toolbar
+        VStack(spacing: 8) {
+            Image(systemName: "arrow.down.doc")
+                .font(.system(size: 28))
+                .foregroundColor(.secondary.opacity(0.6))
 
-            Text("Drop images here or click Import")
-                .font(.headline)
-                .foregroundColor(.secondary)
-
-            Button("Import Images") {
-                showImportPanel()
-            }
-            .buttonStyle(.borderedProminent)
+            Text("Drop images here")
+                .font(.subheadline)
+                .foregroundColor(.secondary.opacity(0.6))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

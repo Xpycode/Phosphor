@@ -11,64 +11,62 @@ struct ResizeSection: View {
     @ObservedObject var settings: ExportSettings
 
     var body: some View {
-        GroupBox("Resize") {
+        GroupBox("Canvas") {
             VStack(alignment: .leading, spacing: 12) {
-                Toggle("Enable Resize", isOn: $settings.resizeEnabled)
+                // Canvas Mode Picker (Original / Preset / Custom)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Size")
+                        .font(.subheadline)
 
-                if settings.resizeEnabled {
-                    Divider()
-
-                    // Canvas Mode Picker (Auto / Preset / Custom)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Size")
-                            .font(.subheadline)
-
-                        Picker("", selection: $settings.canvasMode) {
-                            ForEach(CanvasMode.allCases) { mode in
-                                Text(mode.label).tag(mode)
-                            }
+                    Picker("", selection: $settings.canvasMode) {
+                        ForEach(CanvasMode.allCases) { mode in
+                            Text(mode.label).tag(mode)
                         }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
 
-                    // Mode-specific content
-                    switch settings.canvasMode {
-                    case .automatic:
-                        Text("Uses largest frame dimensions")
+                // Mode-specific content
+                switch settings.canvasMode {
+                case .original:
+                    if let size = settings.automaticCanvasSize {
+                        Text("Source: \(Int(size.width)) × \(Int(size.height)) px")
                             .font(.caption)
                             .foregroundColor(.secondary)
-
-                    case .preset:
-                        presetSection
-
-                    case .custom:
-                        customDimensionsSection
+                    } else {
+                        Text("Uses source image dimensions")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
 
-                    // Scale Mode (Fit/Fill) - only for preset and custom
-                    if settings.canvasMode != .automatic {
-                        scaleModeSection
-                    }
+                case .preset:
+                    presetSection
+                    scaleModeSection
 
-                    // Background color picker for Fit mode (GIF only)
-                    if settings.canvasMode != .automatic &&
-                       settings.scaleMode == .fit &&
-                       settings.format == .gif {
-                        backgroundColorSection
-                    }
+                case .custom:
+                    customDimensionsSection
+                    scaleModeSection
+                }
 
-                    // Output size preview
-                    if let size = settings.resolvedCanvasSize {
-                        HStack {
-                            Text("Output:")
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("\(Int(size.width)) × \(Int(size.height)) px")
-                                .fontWeight(.medium)
-                        }
-                        .font(.caption)
+                // Background color picker for Fit mode (GIF only)
+                if settings.canvasMode != .original &&
+                   settings.scaleMode == .fit &&
+                   settings.format == .gif {
+                    backgroundColorSection
+                }
+
+                // Output size preview (for preset/custom)
+                if settings.canvasMode != .original,
+                   let size = settings.resolvedCanvasSize {
+                    HStack {
+                        Text("Output:")
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(Int(size.width)) × \(Int(size.height)) px")
+                            .fontWeight(.medium)
                     }
+                    .font(.caption)
                 }
             }
             .padding(.top, 8)
@@ -150,9 +148,9 @@ struct ResizeSection: View {
             Group {
                 switch settings.scaleMode {
                 case .fit:
-                    Text("Letterbox: entire image visible, adds padding if needed")
+                    Text("Letterbox: entire image visible, adds padding")
                 case .fill:
-                    Text("Crop: fills frame completely, may trim edges")
+                    Text("Crop: fills canvas completely, may trim edges")
                 }
             }
             .font(.caption)
@@ -194,7 +192,12 @@ struct ResizeSection: View {
     VStack(spacing: 20) {
         ResizeSection(settings: {
             let s = ExportSettings()
-            s.resizeEnabled = true
+            s.canvasMode = .original
+            return s
+        }())
+
+        ResizeSection(settings: {
+            let s = ExportSettings()
             s.canvasMode = .preset
             s.selectedPresetID = "gif-720"
             return s
@@ -202,7 +205,6 @@ struct ResizeSection: View {
 
         ResizeSection(settings: {
             let s = ExportSettings()
-            s.resizeEnabled = true
             s.canvasMode = .custom
             s.scaleMode = .fit
             return s

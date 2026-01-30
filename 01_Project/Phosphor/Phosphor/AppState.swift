@@ -181,6 +181,26 @@ class AppState: ObservableObject {
         if !hadFrames && hasFrames {
             selectedFrameIndex = 0
         }
+
+        // Update automatic canvas size based on largest frame
+        updateAutomaticCanvasSize()
+    }
+
+    /// Calculate the largest frame dimensions and update automaticCanvasSize
+    private func updateAutomaticCanvasSize() {
+        var maxWidth: CGFloat = 0
+        var maxHeight: CGFloat = 0
+
+        for frame in frames {
+            if let image = NSImage(contentsOf: frame.url) {
+                maxWidth = max(maxWidth, image.size.width)
+                maxHeight = max(maxHeight, image.size.height)
+            }
+        }
+
+        if maxWidth > 0 && maxHeight > 0 {
+            exportSettings.automaticCanvasSize = CGSize(width: maxWidth, height: maxHeight)
+        }
     }
 
     /// Remove frame at the specified index
