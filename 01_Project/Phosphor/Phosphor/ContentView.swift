@@ -15,17 +15,27 @@ struct ContentView: View {
             // Left column: Preview (top) + Toolbar + Timeline (bottom)
             GeometryReader { geometry in
                 VStack(spacing: 0) {
+                    // Preview area
                     PreviewPane(appState: appState, settings: appState.exportSettings)
                         .frame(minHeight: 300)
 
-                    TimelineToolbar(
-                        appState: appState,
-                        availableWidth: geometry.size.width,
-                        onImport: showImportPanel
-                    )
+                    // Divider between preview and timeline section
+                    Divider()
 
-                    TimelinePane(appState: appState)
-                        .frame(minHeight: 120)
+                    // Timeline section (toolbar + thumbnails) with darker background
+                    VStack(spacing: 0) {
+                        TimelineToolbar(
+                            appState: appState,
+                            availableWidth: geometry.size.width,
+                            onImport: showImportPanel
+                        )
+
+                        Divider()
+
+                        TimelinePane(appState: appState)
+                            .frame(minHeight: 120)
+                    }
+                    .background(Color(nsColor: .windowBackgroundColor).opacity(0.6))
                 }
             }
             .frame(minWidth: 600)

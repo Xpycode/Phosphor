@@ -48,8 +48,8 @@ struct TimelineToolbar: View {
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 6)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .padding(.vertical, 8)
+        .background(Color(nsColor: .underPageBackgroundColor))
     }
 }
 

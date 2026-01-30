@@ -23,7 +23,7 @@ struct TimelinePane: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 150)
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             handleDrop(providers: providers)
         }
