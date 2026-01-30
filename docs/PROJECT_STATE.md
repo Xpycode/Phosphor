@@ -4,10 +4,10 @@
 - **Project:** Phosphor - macOS animated GIF/WebP/APNG creator
 - **Started:** November 2025
 - **Current Phase:** implementation (fresh restart)
-- **Last Session:** 2026-01-30
+- **Last Session:** 2026-01-31
 
 ## Current Focus
-**Phase 6 COMPLETE** - Export integration + Timeline toolbar fully wired up.
+**Phase 8 COMPLETE** - Canvas-aware preview with live Fit/Fill visualization.
 
 ### Completed (Phase 1):
 - ✅ Clean slate - deleted all buggy 6-pane code
@@ -75,11 +75,20 @@
 - ✅ Format-specific presets wired to UI (GIF: Square/SD/720p/1080p)
 - ✅ Build succeeds
 
-### Ready for Phase 8:
+### Completed (Phase 8 - Canvas-Aware Preview):
+- ✅ Consolidated redundant import prompts (single toolbar button)
+- ✅ Renamed "Resize" to "Canvas" section, "Auto" to "Original"
+- ✅ Removed "Enable Resize" toggle - canvas always visible
+- ✅ Preview shows actual canvas aspect ratio with Fit/Fill visualization
+- ✅ Fixed automaticCanvasSize calculation on image import
+- ✅ Fixed live preview updates (observe ExportSettings directly)
+- ✅ Build succeeds, app runs
+
+### Ready for Phase 9:
 - End-to-end testing with real images
 - Test GIF export with Fit mode (verify letterbox background)
 - Test APNG export with Fit mode (verify transparency)
-- Verify file size reduction with presets (6240px → 720p should be < 10 MB)
+- Verify file size reduction with presets
 
 ## Key Decisions Made
 [See decisions.md for full history]
@@ -98,8 +107,9 @@ None - ready to implement
 6. [x] Phase 5.5: Timeline toolbar + zoomable filmstrip ✅
 7. [x] Phase 6: Export integration ✅
 8. [x] Phase 7: Enhanced resize (Fit/Fill, presets) ✅
-9. [ ] **Test exports end-to-end** (critical!)
-10. [ ] Polish and bug fixes
+9. [x] Phase 8: Canvas-aware preview ✅
+10. [ ] **Test exports end-to-end** (critical!)
+11. [ ] Polish and bug fixes
 
 ## Git State
 - Branch: `feature/6-pane-workspace` (buggy, to be replaced)
@@ -107,4 +117,4 @@ None - ready to implement
 - Salvaged code backed up and documented
 
 ---
-*Updated: 2026-01-30*
+*Updated: 2026-01-31*
