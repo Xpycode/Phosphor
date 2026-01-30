@@ -1,0 +1,12 @@
+2025-11-09T14:05:42Z - Started Codex activity log
+2025-11-09T14:08:12Z - Created comitted changes up to interface-3
+2025-11-09T14:08:12Z - Merged interface-3 into main and branched interface-4-fixManual
+2025-11-09T14:08:12Z - Implemented drag-and-drop manual sorting, width fix, auto sort carryover, slider warning fix
+2025-11-09T14:10:29Z - Started session logging
+2025-11-09T14:10:29Z - Committed interface-2 polish and merged to main
+2025-11-09T14:10:29Z - Created interface-3, filtered RAW image types, updated NSOpenPanel
+2025-11-09T14:10:29Z - Merged interface-3 to main, branched interface-4-fixManual
+2025-11-09T14:10:29Z - Reimplemented manual sorting with custom drag/drop and width fix
+2025-11-09T14:10:29Z - Ensured manual mode inherits last auto sort order
+2025-11-09T14:10:29Z - Added async dispatch to avoid Publishing changes warning
+2025-11-09T14:12:00Z – TODO: FileListView thumbnails should render in a fixed 120x72 canvas (aspectRatio(.fit)) and metadata column should start at consistent offset (~130px) so rows align.

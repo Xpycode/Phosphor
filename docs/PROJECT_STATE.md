@@ -1,0 +1,110 @@
+# Project State
+
+## Quick Facts
+- **Project:** Phosphor - macOS animated GIF/WebP/APNG creator
+- **Started:** November 2025
+- **Current Phase:** implementation (fresh restart)
+- **Last Session:** 2026-01-30
+
+## Current Focus
+**Phase 6 COMPLETE** - Export integration + Timeline toolbar fully wired up.
+
+### Completed (Phase 1):
+- ✅ Clean slate - deleted all buggy 6-pane code
+- ✅ 3-pane layout: Preview (top-left), Timeline (bottom-left), Settings (right sidebar)
+- ✅ Placeholder views ready for functionality
+- ✅ AppState model created with frames array, playback state, export settings
+- ✅ Build succeeds, app runs
+
+### Completed (Phase 2):
+- ✅ AppState import methods: importImages(), removeFrame(), reorderFrames()
+- ✅ FrameThumbnailView component (80x60 thumbnails, selection highlight)
+- ✅ TimelinePane with horizontal thumbnail scroll
+- ✅ File import via NSOpenPanel
+- ✅ Drag-and-drop image import
+- ✅ Click to select frame
+
+### Completed (Phase 3):
+- ✅ PreviewPane displays current frame image
+- ✅ Playback timer in AppState (Combine-based)
+- ✅ PlaybackControlsView: play/pause, frame counter, FPS slider
+- ✅ Space bar keyboard shortcut for play/pause
+- ✅ Selection syncs to preview when paused
+
+### Completed (Phase 4):
+- ✅ ImageItem.isMuted property + AppState.toggleMute(at:) + unmutedFrames computed
+- ✅ FrameThumbnailView hover buttons (delete/mute) with visual muted overlay
+- ✅ Drag-to-reorder frames in TimelinePane via DropDelegate
+- ✅ Build succeeds
+
+### Completed (Phase 5):
+- ✅ FormatSelectionSection: GIF/APNG segmented picker bound to exportSettings.format
+- ✅ TimingSection: FPS slider (1-60), loop count picker (Forever/1-10)
+- ✅ QualitySection (GIF only): Quality slider (10-100%), dithering toggle
+- ✅ ColorDepthSection (GIF only): Enable toggle, levels slider (2-30), color count preview
+- ✅ ResizeSection: Enable toggle, Auto/Custom canvas mode, width/height inputs
+- ✅ Export button: Shows format name, frame count, disabled when no unmuted frames
+- ✅ All sections assembled in SettingsSidebar with proper show/hide logic
+- ✅ Build succeeds, app runs
+
+### Completed (Phase 5.5):
+- ✅ TimelineToolbar component with Import button (left) + Fit All + Zoom slider (right)
+- ✅ Thumbnail zoom state in AppState (thumbnailWidth: 40-120px range)
+- ✅ fitAllThumbnails() calculates optimal size based on available width
+- ✅ FrameThumbnailView uses dynamic width with 4:3 aspect ratio
+- ✅ Toolbar positioned between PlaybackControls and Timeline
+- ✅ Build succeeds, app runs
+
+### Completed (Phase 6):
+- ✅ Export state in AppState (isExporting, exportProgress, exportError, showExportSuccess)
+- ✅ performExport() method with NSSavePanel + format-appropriate file extension
+- ✅ GIF export via GIFExporter (with quality, dithering, color depth, resize)
+- ✅ APNG export via APNGExporter (with resize)
+- ✅ Progress indicator during export (linear progress bar + percentage)
+- ✅ Success alert with "Show in Finder" option
+- ✅ Error alert with localized error description
+- ✅ Build succeeds, app runs
+
+### Completed (Phase 7 - Resize Enhancement):
+- ✅ ScaleMode enum (Fit/Fill) with letterbox and crop behaviors
+- ✅ CanvasMode extended with .preset case for format-specific presets
+- ✅ ResizeInstruction extended with .fit(size:backgroundColor:) case
+- ✅ NSImage.resizedToFit() for letterbox scaling with background fill
+- ✅ NSImage.dominantCornerColor() for auto-detect background color
+- ✅ ResizeSection redesigned: Auto/Preset/Custom + Scale mode + Background picker
+- ✅ Format-specific presets wired to UI (GIF: Square/SD/720p/1080p)
+- ✅ Build succeeds
+
+### Ready for Phase 8:
+- End-to-end testing with real images
+- Test GIF export with Fit mode (verify letterbox background)
+- Test APNG export with Fit mode (verify transparency)
+- Verify file size reduction with presets (6240px → 720p should be < 10 MB)
+
+## Key Decisions Made
+[See decisions.md for full history]
+- 2025-11-13: Start fresh - 6-pane design too complex, user doesn't like the look
+- 2025-11-13: Salvage ~800 lines of export/model code for reuse
+
+## Blockers
+None - ready to implement
+
+## Next Actions
+1. [x] Phase 1: Clean slate + UI shell (3-pane layout) ✅
+2. [x] Phase 2: Timeline + import ✅
+3. [x] Phase 3: Preview + playback ✅
+4. [x] Phase 4: Mute/delete ✅
+5. [x] Phase 5: Settings panel ✅
+6. [x] Phase 5.5: Timeline toolbar + zoomable filmstrip ✅
+7. [x] Phase 6: Export integration ✅
+8. [x] Phase 7: Enhanced resize (Fit/Fill, presets) ✅
+9. [ ] **Test exports end-to-end** (critical!)
+10. [ ] Polish and bug fixes
+
+## Git State
+- Branch: `feature/6-pane-workspace` (buggy, to be replaced)
+- Last stable: `30ba339`
+- Salvaged code backed up and documented
+
+---
+*Updated: 2026-01-30*
