@@ -222,6 +222,12 @@ class ExportSettings: ObservableObject {
     @Published var colorDepthLevels: Double = 16 // corresponds to CIColorPosterize levels
     @Published var overrideCustomFrameTimings: Bool = false
 
+    /// Whether aspect ratio is locked in Custom mode
+    @Published var aspectRatioLocked: Bool = true
+
+    /// The locked aspect ratio (width/height), captured when lock is enabled
+    @Published var lockedAspectRatio: CGFloat?
+
     private var isUpdating = false
 
     // Computed property to sync frame rate with delay
@@ -317,5 +323,28 @@ class ExportSettings: ObservableObject {
         let levels = clampedColorDepthLevels
         guard levels > 0 else { return 0 }
         return Int(pow(Double(levels), 3.0))
+    }
+
+    /// Current aspect ratio from custom dimensions
+    var customAspectRatio: CGFloat {
+        guard canvasHeight > 0 else { return 1.0 }
+        return canvasWidth / canvasHeight
+    }
+
+    /// Captures the current aspect ratio for locking
+    func captureAspectRatio() {
+        lockedAspectRatio = customAspectRatio
+    }
+
+    /// Updates width based on locked aspect ratio
+    func updateWidthFromHeight() {
+        guard let ratio = lockedAspectRatio, ratio > 0 else { return }
+        canvasWidth = round(canvasHeight * ratio)
+    }
+
+    /// Updates height based on locked aspect ratio
+    func updateHeightFromWidth() {
+        guard let ratio = lockedAspectRatio, ratio > 0 else { return }
+        canvasHeight = round(canvasWidth / ratio)
     }
 }

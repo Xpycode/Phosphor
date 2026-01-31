@@ -96,8 +96,13 @@
 - ✅ APNG export works
 - ✅ WebP export works
 
-### Ready for Phase 10:
-- Consider aspect ratio lock for Custom mode
+### Completed (Phase 10 - Aspect Ratio Lock):
+- ✅ Aspect ratio lock toggle in Custom canvas mode
+- ✅ Link icon between width/height fields
+- ✅ Proportional updates when locked
+- ✅ Auto-initialize from source image dimensions
+
+### Ready for Phase 11:
 - Per-frame rotation (optional)
 - App icon
 
@@ -122,7 +127,8 @@ None - ready to implement
 10. [x] GIF export verified ✅
 11. [x] APNG export verified ✅
 12. [x] Phase 9: WebP export ✅
-13. [ ] Polish and bug fixes
+13. [x] Phase 10: Aspect ratio lock ✅
+14. [ ] Polish and bug fixes
 
 ## Git State
 - Branch: `feature/6-pane-workspace` (buggy, to be replaced)

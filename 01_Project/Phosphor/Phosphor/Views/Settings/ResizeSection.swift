@@ -99,11 +99,12 @@ struct ResizeSection: View {
 
     private var customDimensionsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
+            // Width row
             HStack {
                 Text("Width:")
                     .frame(width: 50, alignment: .leading)
 
-                TextField("", value: $settings.canvasWidth, format: .number)
+                TextField("", value: widthBinding, format: .number)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 80)
 
@@ -111,11 +112,28 @@ struct ResizeSection: View {
                     .foregroundColor(.secondary)
             }
 
+            // Lock toggle row (centered)
+            HStack {
+                Spacer()
+                    .frame(width: 50)
+
+                Button(action: toggleAspectLock) {
+                    Image(systemName: "link")
+                        .opacity(settings.aspectRatioLocked ? 1.0 : 0.4)
+                        .foregroundColor(settings.aspectRatioLocked ? .accentColor : .secondary)
+                }
+                .buttonStyle(.borderless)
+                .help(settings.aspectRatioLocked ? "Unlock aspect ratio" : "Lock aspect ratio")
+
+                Spacer()
+            }
+
+            // Height row
             HStack {
                 Text("Height:")
                     .frame(width: 50, alignment: .leading)
 
-                TextField("", value: $settings.canvasHeight, format: .number)
+                TextField("", value: heightBinding, format: .number)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 80)
 
@@ -126,6 +144,60 @@ struct ResizeSection: View {
             Text("Range: \(Int(ExportConstants.dimensionRange.lowerBound))–\(Int(ExportConstants.dimensionRange.upperBound)) px")
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+        .onAppear {
+            initializeCustomDimensionsIfNeeded()
+        }
+        .onChange(of: settings.canvasMode) { _, newMode in
+            if newMode == .custom {
+                initializeCustomDimensionsIfNeeded()
+            }
+        }
+    }
+
+    // MARK: - Aspect Ratio Lock Bindings
+
+    private var widthBinding: Binding<Double> {
+        Binding(
+            get: { settings.canvasWidth },
+            set: { newValue in
+                settings.canvasWidth = newValue
+                if settings.aspectRatioLocked {
+                    settings.updateHeightFromWidth()
+                }
+            }
+        )
+    }
+
+    private var heightBinding: Binding<Double> {
+        Binding(
+            get: { settings.canvasHeight },
+            set: { newValue in
+                settings.canvasHeight = newValue
+                if settings.aspectRatioLocked {
+                    settings.updateWidthFromHeight()
+                }
+            }
+        )
+    }
+
+    private func toggleAspectLock() {
+        settings.aspectRatioLocked.toggle()
+        if settings.aspectRatioLocked {
+            settings.captureAspectRatio()
+        }
+    }
+
+    private func initializeCustomDimensionsIfNeeded() {
+        // If switching to Custom and dimensions are default, use source image size
+        if let sourceSize = settings.automaticCanvasSize,
+           settings.canvasWidth == 640 && settings.canvasHeight == 480 {
+            settings.canvasWidth = sourceSize.width
+            settings.canvasHeight = sourceSize.height
+        }
+        // Capture initial aspect ratio if not already set
+        if settings.lockedAspectRatio == nil {
+            settings.captureAspectRatio()
         }
     }
 
