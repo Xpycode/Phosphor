@@ -12,7 +12,7 @@ struct FormatSelectionSection: View {
 
     var body: some View {
         GroupBox {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 Picker("", selection: $settings.format) {
                     ForEach(ExportFormat.implementedFormats, id: \.self) { format in
                         Text(format.rawValue).tag(format)
@@ -25,7 +25,7 @@ struct FormatSelectionSection: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            .padding(.top, 8)
+            .padding(.top, 4)
         } label: {
             Text("Export Format")
                 .font(.headline)

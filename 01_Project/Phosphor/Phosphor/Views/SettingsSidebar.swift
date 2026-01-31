@@ -9,11 +9,17 @@ import SwiftUI
 
 struct SettingsSidebar: View {
     @ObservedObject var appState: AppState
+    @ObservedObject private var exportSettings: ExportSettings
+
+    init(appState: AppState) {
+        self.appState = appState
+        self.exportSettings = appState.exportSettings
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 10) {
                     // Format Selection
                     FormatSelectionSection(settings: appState.exportSettings)
 
@@ -68,7 +74,7 @@ struct SettingsSidebar: View {
                     Button(action: {
                         appState.performExport()
                     }) {
-                        Text("Export \(appState.exportSettings.format.rawValue)")
+                        Text("Export \(exportSettings.format.rawValue)")
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 8)
                     }

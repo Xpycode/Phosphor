@@ -136,10 +136,11 @@ struct PreviewPane: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        // Minimal placeholder - import prompt is in the timeline toolbar
-        Image(systemName: "photo.on.rectangle.angled")
-            .font(.system(size: 48))
-            .foregroundColor(.secondary.opacity(0.5))
+        ContentUnavailableView {
+            Label("No Images", systemImage: "photo.on.rectangle.angled")
+        } description: {
+            Text("Import images to create an animated GIF or APNG")
+        }
     }
 
     // MARK: - Error State
@@ -157,6 +158,5 @@ struct PreviewPane: View {
 }
 
 #Preview {
-    let appState = AppState()
-    return PreviewPane(appState: appState, settings: appState.exportSettings)
+    PreviewPane(appState: AppState(), settings: ExportSettings())
 }

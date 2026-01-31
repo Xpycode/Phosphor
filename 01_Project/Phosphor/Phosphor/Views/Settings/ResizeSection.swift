@@ -12,7 +12,7 @@ struct ResizeSection: View {
 
     var body: some View {
         GroupBox("Canvas") {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 // Canvas Mode Picker (Original / Preset / Custom)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Size")
@@ -69,7 +69,7 @@ struct ResizeSection: View {
                     .font(.caption)
                 }
             }
-            .padding(.top, 8)
+            .padding(.top, 4)
         }
     }
 

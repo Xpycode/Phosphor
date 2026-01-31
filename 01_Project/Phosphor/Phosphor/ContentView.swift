@@ -45,6 +45,9 @@ struct ContentView: View {
                 .frame(minWidth: 280, maxWidth: 400)
         }
         .frame(minWidth: 1080, minHeight: 700)
+        .focusedValue(\.importAction, showImportPanel)
+        .focusedValue(\.exportAction, appState.performExport)
+        .focusedValue(\.canExport, !appState.unmutedFrames.isEmpty && !appState.isExporting)
     }
 
     private func showImportPanel() {

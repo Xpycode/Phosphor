@@ -13,6 +13,7 @@ struct TimelinePane: View {
 
     @State private var draggedFrameID: UUID?
     @State private var dropTargetIndex: Int?
+    @State private var isDropTargeted = false
 
     var body: some View {
         ZStack {
@@ -24,21 +25,25 @@ struct TimelinePane: View {
         }
         .frame(maxWidth: .infinity, minHeight: 120, idealHeight: 150)
         .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
-        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
             handleDrop(providers: providers)
+        }
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.accentColor, lineWidth: 3)
+                    .background(Color.accentColor.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .padding(4)
+            }
         }
     }
 
     private var emptyStateView: some View {
-        // Drop zone indicator only - import button is in toolbar
-        VStack(spacing: 8) {
-            Image(systemName: "arrow.down.doc")
-                .font(.system(size: 28))
-                .foregroundColor(.secondary.opacity(0.6))
-
-            Text("Drop images here")
-                .font(.subheadline)
-                .foregroundColor(.secondary.opacity(0.6))
+        ContentUnavailableView {
+            Label("Drop Images", systemImage: "arrow.down.doc")
+        } description: {
+            Text("Drag image files here to add them to your animation")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

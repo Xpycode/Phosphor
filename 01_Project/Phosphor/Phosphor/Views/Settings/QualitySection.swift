@@ -13,7 +13,7 @@ struct QualitySection: View {
     var body: some View {
         if settings.format == .gif {
             GroupBox("Quality") {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
                     // Quality slider with percentage display
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
@@ -33,8 +33,6 @@ struct QualitySection: View {
                         )
                     }
 
-                    Divider()
-
                     // Dithering toggle
                     Toggle("Enable Dithering", isOn: $settings.enableDithering)
 
@@ -42,7 +40,7 @@ struct QualitySection: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                .padding(.top, 8)
+                .padding(.top, 4)
             }
         }
     }

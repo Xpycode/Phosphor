@@ -13,7 +13,7 @@ struct ColorDepthSection: View {
     var body: some View {
         if settings.format == .gif {
             GroupBox("Color Depth") {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
                     Toggle("Reduce color depth", isOn: $settings.colorDepthEnabled)
 
                     if settings.colorDepthEnabled {
@@ -40,7 +40,7 @@ struct ColorDepthSection: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                .padding(.top, 8)
+                .padding(.top, 4)
             }
         }
     }

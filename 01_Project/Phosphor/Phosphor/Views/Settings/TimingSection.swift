@@ -12,7 +12,7 @@ struct TimingSection: View {
 
     var body: some View {
         GroupBox("Timing") {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 // Frame Rate Slider
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -35,8 +35,6 @@ struct TimingSection: View {
                     }
                 }
 
-                Divider()
-
                 // Loop Count Picker
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Loop Count")
@@ -53,7 +51,7 @@ struct TimingSection: View {
                     .pickerStyle(.menu)
                 }
             }
-            .padding(.top, 8)
+            .padding(.top, 4)
         }
     }
 }
