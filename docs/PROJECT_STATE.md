@@ -84,13 +84,22 @@
 - ✅ Fixed live preview updates (observe ExportSettings directly)
 - ✅ Build succeeds, app runs
 
+### Completed (Phase 9 - WebP Export):
+- ✅ Added webp.swift SPM dependency (v1.1.2 + libwebp-ios)
+- ✅ Created WebPExporter.swift with animated WebP support
+- ✅ Wired WebP in AppState.performExport()
+- ✅ Enabled WebP in format picker (all 3 formats now available)
+- ✅ Build succeeds
+
 ### Verified:
 - ✅ GIF export works with canvas-aware Fit/Fill modes
+- ✅ APNG export works
+- ✅ WebP export works
 
-### Ready for Phase 9:
-- Test APNG export with Fit mode (verify transparency)
+### Ready for Phase 10:
 - Consider aspect ratio lock for Custom mode
 - Per-frame rotation (optional)
+- App icon
 
 ## Key Decisions Made
 [See decisions.md for full history]
@@ -111,8 +120,9 @@ None - ready to implement
 8. [x] Phase 7: Enhanced resize (Fit/Fill, presets) ✅
 9. [x] Phase 8: Canvas-aware preview ✅
 10. [x] GIF export verified ✅
-11. [ ] Test APNG export
-12. [ ] Polish and bug fixes
+11. [x] APNG export verified ✅
+12. [x] Phase 9: WebP export ✅
+13. [ ] Polish and bug fixes
 
 ## Git State
 - Branch: `feature/6-pane-workspace` (buggy, to be replaced)

@@ -1,7 +1,7 @@
 # Session Index
 
 ## 2026
-- [2026-01-31](2026-01-31.md) - Canvas-aware preview, visual hierarchy polish, HIG review + plan
+- [2026-01-31](2026-01-31.md) - Canvas-aware preview, HIG improvements, keyboard shortcuts
 - [2026-01-30](2026-01-30.md) - Phases 1-6 complete, planned resize enhancement (Fill/Fit + presets)
 
 ## 2025 (Pre-Directions)
