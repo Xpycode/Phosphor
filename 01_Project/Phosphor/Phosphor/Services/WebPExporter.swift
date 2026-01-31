@@ -2,11 +2,12 @@
 //  WebPExporter.swift
 //  Phosphor
 //
-//  Created on 2025-11-06
+//  Created on 2026-01-31
 //
 
 import Foundation
 import AppKit
+import webp
 
 struct WebPExporter {
     static func export(
@@ -15,32 +16,74 @@ struct WebPExporter {
         frameDelay: Double,
         loopCount: Int,
         quality: Double,
-        resizeInstruction _: ResizeInstruction?,
-        perFrameDelays _: [Double]?,
+        resizeInstruction: ResizeInstruction?,
+        perFrameDelays: [Double]?,
         progressHandler: @escaping (Double) -> Void
     ) async throws {
         guard !images.isEmpty else {
             throw ExportError.noImages
         }
 
-        // Note: WebP export requires external library (libwebp)
-        // For now, we'll provide a fallback message
-        // In a production app, you would integrate libwebp or use a Swift package
+        // Load first image to determine canvas size
+        guard let firstNSImage = NSImage.loadedNormalizingOrientation(from: images[0].url) else {
+            throw ExportError.failedToCreateImage
+        }
 
-        throw NSError(
-            domain: "PhosphorExport",
-            code: -1,
-            userInfo: [
-                NSLocalizedDescriptionKey: "WebP export is not yet implemented. Please use GIF format.",
-                NSLocalizedRecoverySuggestionErrorKey: "WebP support requires the libwebp library. You can add it via Swift Package Manager or CocoaPods."
-            ]
+        // Apply resize to get final canvas dimensions
+        let firstProcessed: NSImage
+        if let resizeInstruction = resizeInstruction {
+            firstProcessed = firstNSImage.resized(using: resizeInstruction)
+        } else {
+            firstProcessed = firstNSImage
+        }
+
+        let width = Int(firstProcessed.size.width)
+        let height = Int(firstProcessed.size.height)
+
+        // Create animated WebP encoder
+        // Quality: convert 0.0-1.0 to 0-100
+        let webpQuality = Float(max(0, min(1, quality)) * 100)
+        let encoder = WebPAnimatedEncoder()
+        try encoder.create(
+            config: .preset(.picture, quality: webpQuality),
+            width: width,
+            height: height
         )
 
-        // TODO: Implement WebP export using libwebp
-        // This would involve:
-        // 1. Creating a WebPMux instance
-        // 2. Encoding each frame with WebPEncode
-        // 3. Adding frames to the mux with WebPMuxAssemble
-        // 4. Writing the output to file
+        // Process each image
+        for (index, item) in images.enumerated() {
+            try autoreleasepool {
+                guard var nsImage = NSImage.loadedNormalizingOrientation(from: item.url) else {
+                    throw ExportError.failedToCreateImage
+                }
+
+                // Apply resize instruction
+                if let resizeInstruction = resizeInstruction {
+                    nsImage = nsImage.resized(using: resizeInstruction)
+                }
+
+                // Calculate frame duration in milliseconds
+                let delaySeconds: Double
+                if let overrides = perFrameDelays, index < overrides.count {
+                    delaySeconds = max(0.01, overrides[index] / 1000.0)
+                } else {
+                    delaySeconds = max(0.01, frameDelay)
+                }
+                let durationMs = Int(delaySeconds * 1000)
+
+                // Add frame to encoder
+                try encoder.addImage(image: nsImage, duration: durationMs)
+            }
+
+            // Update progress
+            let progress = Double(index + 1) / Double(images.count)
+            await MainActor.run {
+                progressHandler(progress)
+            }
+        }
+
+        // Encode and write to file
+        let data = try encoder.encode(loopCount: loopCount)
+        try data.write(to: url)
     }
 }

@@ -318,8 +318,18 @@ class AppState: ObservableObject {
                 )
 
             case .webp:
-                // WebP not implemented yet
-                throw ExportError.failedToCreateDestination
+                try await WebPExporter.export(
+                    images: frames,
+                    to: url,
+                    frameDelay: frameDelaySeconds,
+                    loopCount: exportSettings.loopCount,
+                    quality: exportSettings.quality,
+                    resizeInstruction: exportSettings.resizeInstruction,
+                    perFrameDelays: nil,
+                    progressHandler: { [weak self] progress in
+                        self?.exportProgress = progress
+                    }
+                )
             }
 
             // Success

@@ -30,6 +30,10 @@
 		1NV2FEKEQCWGPU2QZZHSN9BS /* ColorDepthSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = WJS5KT765IWTVESKFSFCWBJ5 /* ColorDepthSection.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXBuildFile section */
+		WEBP001000000001 /* webp in Frameworks */ = {isa = PBXBuildFile; productRef = WEBP002000000001 /* webp */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		2000000000000001 /* PhosphorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhosphorApp.swift; sourceTree = "<group>"; };
 		2000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -61,10 +65,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				99D2EE267D2B49C09F8A7D85 /* SettingsSidebar.swift in Sources */,
-				AC4929E7B0804781A7F3CE1D /* TimelinePane.swift in Sources */,
-				BF7DBE01307F4BC2A58241F7 /* PreviewPane.swift in Sources */,
-				DD67BA2B05C148F0B2F29CD2 /* AppState.swift in Sources */,
+				WEBP001000000001 /* webp in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -172,6 +173,9 @@
 			dependencies = (
 			);
 			name = Phosphor;
+			packageProductDependencies = (
+				WEBP002000000001 /* webp */,
+			);
 			productName = Phosphor;
 			productReference = 300000000000000E /* Phosphor.app */;
 			productType = "com.apple.product-type.application";
@@ -200,6 +204,9 @@
 				Base,
 			);
 			mainGroup = 5000000000000001;
+			packageReferences = (
+				WEBP003000000001 /* XCRemoteSwiftPackageReference "webp.swift" */,
+			);
 			productRefGroup = 5000000000000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -449,6 +456,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		WEBP003000000001 /* XCRemoteSwiftPackageReference "webp.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/awxkee/webp.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		WEBP002000000001 /* webp */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = WEBP003000000001 /* XCRemoteSwiftPackageReference "webp.swift" */;
+			productName = webp;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A000000000000001 /* Project object */;
 }

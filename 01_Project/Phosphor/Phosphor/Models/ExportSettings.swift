@@ -27,11 +27,11 @@ enum ExportFormat: String, CaseIterable {
     case apng = "APNG"
 
     static var implementedFormats: [ExportFormat] {
-        allCases.filter { $0 != .webp }
+        allCases  // All formats now implemented
     }
 
     var isImplemented: Bool {
-        self != .webp
+        true  // All formats now implemented
     }
 
     var fileExtension: String {
