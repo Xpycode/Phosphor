@@ -45,16 +45,20 @@ struct SettingsSidebar: View {
             Divider()
 
             VStack(spacing: 8) {
-                // Frame count info
+                // Export info: frames / dimensions
                 if appState.hasFrames {
                     let unmutedCount = appState.unmutedFrames.count
                     let totalCount = appState.frames.count
-                    if unmutedCount < totalCount {
-                        Text("\(unmutedCount) of \(totalCount) frames")
+                    let frameText = unmutedCount < totalCount
+                        ? "\(unmutedCount) of \(totalCount) frames"
+                        : "\(totalCount) frames"
+
+                    if let size = exportSettings.resolvedCanvasSize ?? exportSettings.automaticCanvasSize {
+                        Text("\(frameText) / \(Int(size.width)) × \(Int(size.height)) px")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     } else {
-                        Text("\(totalCount) frames")
+                        Text(frameText)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

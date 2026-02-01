@@ -11,21 +11,17 @@ struct ResizeSection: View {
     @ObservedObject var settings: ExportSettings
 
     var body: some View {
-        GroupBox("Canvas") {
-            VStack(alignment: .leading, spacing: 8) {
+        GroupBox {
+            VStack(spacing: 8) {
                 // Canvas Mode Picker (Original / Preset / Custom)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Size")
-                        .font(.subheadline)
-
-                    Picker("", selection: $settings.canvasMode) {
-                        ForEach(CanvasMode.allCases) { mode in
-                            Text(mode.label).tag(mode)
-                        }
+                Picker("", selection: $settings.canvasMode) {
+                    ForEach(CanvasMode.allCases) { mode in
+                        Text(mode.label).tag(mode)
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: .infinity)
 
                 // Mode-specific content
                 switch settings.canvasMode {
@@ -55,28 +51,20 @@ struct ResizeSection: View {
                    settings.format == .gif {
                     backgroundColorSection
                 }
-
-                // Output size preview (for preset/custom)
-                if settings.canvasMode != .original,
-                   let size = settings.resolvedCanvasSize {
-                    HStack {
-                        Text("Output:")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(Int(size.width)) × \(Int(size.height)) px")
-                            .fontWeight(.medium)
-                    }
-                    .font(.caption)
-                }
             }
+            .frame(maxWidth: .infinity)
             .padding(.top, 4)
+        } label: {
+            Text("Canvas")
+                .frame(maxWidth: .infinity, alignment: .center)
         }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Preset Section
 
     private var presetSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(spacing: 8) {
             let presets = ResizePresetOption.presets(for: settings.format)
 
             Picker("", selection: $settings.selectedPresetID) {
@@ -86,6 +74,7 @@ struct ResizeSection: View {
                 }
             }
             .labelsHidden()
+            .frame(maxWidth: .infinity)
         }
         .onAppear {
             // Auto-select first preset if none selected
@@ -98,52 +87,28 @@ struct ResizeSection: View {
     // MARK: - Custom Dimensions Section
 
     private var customDimensionsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Width row
-            HStack {
-                Text("Width:")
-                    .frame(width: 50, alignment: .leading)
-
-                TextField("", value: widthBinding, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-
-                Text("px")
-                    .foregroundColor(.secondary)
-            }
-
-            // Lock toggle row (centered)
-            HStack {
-                Spacer()
-                    .frame(width: 50)
-
-                Button(action: toggleAspectLock) {
-                    Image(systemName: "link")
-                        .opacity(settings.aspectRatioLocked ? 1.0 : 0.4)
-                        .foregroundColor(settings.aspectRatioLocked ? .accentColor : .secondary)
-                }
-                .buttonStyle(.borderless)
-                .help(settings.aspectRatioLocked ? "Unlock aspect ratio" : "Lock aspect ratio")
-
-                Spacer()
-            }
-
-            // Height row
-            HStack {
-                Text("Height:")
-                    .frame(width: 50, alignment: .leading)
-
-                TextField("", value: heightBinding, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-
-                Text("px")
-                    .foregroundColor(.secondary)
-            }
-
-            Text("Range: \(Int(ExportConstants.dimensionRange.lowerBound))–\(Int(ExportConstants.dimensionRange.upperBound)) px")
-                .font(.caption)
+        HStack(spacing: 6) {
+            Text("W:")
                 .foregroundColor(.secondary)
+
+            TextField("", value: widthBinding, format: .number)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 60)
+
+            Button(action: toggleAspectLock) {
+                Image(systemName: "link")
+                    .opacity(settings.aspectRatioLocked ? 1.0 : 0.4)
+                    .foregroundColor(settings.aspectRatioLocked ? .accentColor : .secondary)
+            }
+            .buttonStyle(.borderless)
+            .help(settings.aspectRatioLocked ? "Unlock aspect ratio" : "Lock aspect ratio")
+
+            Text("H:")
+                .foregroundColor(.secondary)
+
+            TextField("", value: heightBinding, format: .number)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 60)
         }
         .onAppear {
             initializeCustomDimensionsIfNeeded()
@@ -204,7 +169,7 @@ struct ResizeSection: View {
     // MARK: - Scale Mode Section
 
     private var scaleModeSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 4) {
             Text("Scale")
                 .font(.subheadline)
 
@@ -215,25 +180,15 @@ struct ResizeSection: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-
-            // Help text for scale modes
-            Group {
-                switch settings.scaleMode {
-                case .fit:
-                    Text("Letterbox: entire image visible, adds padding")
-                case .fill:
-                    Text("Crop: fills canvas completely, may trim edges")
-                }
-            }
-            .font(.caption)
-            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity)
         }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Background Color Section (for Fit mode)
 
     private var backgroundColorSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(spacing: 8) {
             Text("Letterbox Background")
                 .font(.subheadline)
 
@@ -257,6 +212,7 @@ struct ResizeSection: View {
                     .foregroundColor(.secondary)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }
 

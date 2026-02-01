@@ -46,6 +46,7 @@ struct UnifiedToolbar: View {
         .padding(.vertical, 8)
         .background(Color(nsColor: .underPageBackgroundColor))
         .focusable()
+        .focusEffectDisabled()
         .onKeyPress(.leftArrow) {
             appState.previousUnmutedFrame()
             return .handled
