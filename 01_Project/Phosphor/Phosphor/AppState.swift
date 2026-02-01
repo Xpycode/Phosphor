@@ -101,6 +101,33 @@ class AppState: ObservableObject {
         frames.filter { !$0.isMuted }
     }
 
+    /// Number of unmuted frames (for display in frame counter)
+    var unmutedFrameCount: Int {
+        unmutedFrames.count
+    }
+
+    /// Current position within unmuted frames (1-based for display)
+    /// Returns nil if current frame is muted or no frames
+    var currentUnmutedPosition: Int? {
+        guard hasFrames else { return nil }
+        let index = currentPreviewIndex
+        guard frames.indices.contains(index), !frames[index].isMuted else { return nil }
+
+        // Count how many unmuted frames come before this one
+        var position = 1
+        for i in 0..<index {
+            if !frames[i].isMuted {
+                position += 1
+            }
+        }
+        return position
+    }
+
+    /// Whether playback can proceed (need at least one unmuted frame)
+    var canPlay: Bool {
+        unmutedFrameCount > 0
+    }
+
     // MARK: - Initialization
 
     init() {}
@@ -122,11 +149,23 @@ class AppState: ObservableObject {
 
     /// Start the playback timer based on current frame rate (with per-frame timing)
     private func startPlayback() {
-        guard hasFrames else {
+        guard canPlay else {
             isPlaying = false
             return
         }
+
+        // If current frame is muted, jump to first unmuted frame
+        if frames[currentPreviewIndex].isMuted {
+            jumpToFirstUnmutedFrame()
+        }
+
         scheduleNextFrame()
+    }
+
+    /// Jump to the first unmuted frame
+    private func jumpToFirstUnmutedFrame() {
+        guard let firstUnmuted = frames.firstIndex(where: { !$0.isMuted }) else { return }
+        currentPreviewIndex = firstUnmuted
     }
 
     /// Schedule the next frame with per-frame timing support
@@ -153,15 +192,27 @@ class AppState: ObservableObject {
         playbackTimer = nil
     }
 
-    /// Advance to the next frame, wrapping around at the end
+    /// Advance to the next unmuted frame, wrapping around at the end
     private func advanceFrame() {
-        guard hasFrames else { return }
-        currentPreviewIndex = (currentPreviewIndex + 1) % frames.count
+        guard canPlay else { return }
+
+        // Find the next unmuted frame after current position
+        var nextIndex = (currentPreviewIndex + 1) % frames.count
+        let startIndex = nextIndex
+
+        // Walk through frames until we find an unmuted one (or wrap back to start)
+        while frames[nextIndex].isMuted {
+            nextIndex = (nextIndex + 1) % frames.count
+            // Safety: if we've checked all frames, stop (shouldn't happen with canPlay guard)
+            if nextIndex == startIndex { break }
+        }
+
+        currentPreviewIndex = nextIndex
     }
 
     /// Toggle playback on/off
     func togglePlayback() {
-        guard hasFrames else { return }
+        guard canPlay else { return }
         isPlaying.toggle()
     }
 
@@ -171,6 +222,66 @@ class AppState: ObservableObject {
         currentPreviewIndex = index
         if !isPlaying {
             selectedFrameIndex = index
+        }
+    }
+
+    /// Navigate to the previous unmuted frame (for left arrow key)
+    func previousUnmutedFrame() {
+        guard canPlay, !isPlaying else { return }
+
+        // Find the previous unmuted frame
+        var prevIndex = currentPreviewIndex - 1
+        if prevIndex < 0 { prevIndex = frames.count - 1 }
+
+        let startIndex = prevIndex
+
+        // Walk backwards until we find an unmuted frame
+        while frames[prevIndex].isMuted {
+            prevIndex -= 1
+            if prevIndex < 0 { prevIndex = frames.count - 1 }
+            if prevIndex == startIndex { break }
+        }
+
+        currentPreviewIndex = prevIndex
+        selectedFrameIndex = prevIndex
+    }
+
+    /// Navigate to the next unmuted frame (for right arrow key)
+    func nextUnmutedFrame() {
+        guard canPlay, !isPlaying else { return }
+
+        // Find the next unmuted frame
+        var nextIndex = (currentPreviewIndex + 1) % frames.count
+        let startIndex = nextIndex
+
+        // Walk forward until we find an unmuted frame
+        while frames[nextIndex].isMuted {
+            nextIndex = (nextIndex + 1) % frames.count
+            if nextIndex == startIndex { break }
+        }
+
+        currentPreviewIndex = nextIndex
+        selectedFrameIndex = nextIndex
+    }
+
+    /// Jump to a specific position in unmuted frames (for scrubber)
+    /// Position is 1-based (matches display)
+    func jumpToUnmutedPosition(_ position: Int) {
+        guard position >= 1 && position <= unmutedFrameCount else { return }
+
+        // Find the frame at this unmuted position
+        var unmutedCount = 0
+        for (index, frame) in frames.enumerated() {
+            if !frame.isMuted {
+                unmutedCount += 1
+                if unmutedCount == position {
+                    currentPreviewIndex = index
+                    if !isPlaying {
+                        selectedFrameIndex = index
+                    }
+                    return
+                }
+            }
         }
     }
 

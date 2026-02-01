@@ -52,9 +52,6 @@ struct PreviewPane: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(alignment: .bottom) {
-            PlaybackControlsView(appState: appState)
-        }
     }
 
     // MARK: - Original Preview (no canvas scaling)
@@ -287,11 +284,10 @@ struct PreviewPane: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No Images", systemImage: "photo.on.rectangle.angled")
-        } description: {
-            Text("Import images to create an animated GIF or APNG")
-        }
+        // Simple placeholder - detailed instructions are in the timeline below
+        Image(systemName: "photo.on.rectangle.angled")
+            .font(.system(size: 48))
+            .foregroundColor(.secondary.opacity(0.5))
     }
 
     // MARK: - Error State

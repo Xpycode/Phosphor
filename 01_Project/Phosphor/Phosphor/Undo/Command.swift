@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 protocol Command {
     var actionName: String { get }
     func execute(on state: AppState) throws

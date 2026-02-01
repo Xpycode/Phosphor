@@ -20,18 +20,21 @@ struct SettingsSidebar: View {
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    // Transform (per-frame, only when selected)
-                    TransformSection(appState: appState)
+                VStack(alignment: .center, spacing: 12) {
+                    // Canvas Options (global)
+                    ResizeSection(settings: appState.exportSettings)
+
+                    Divider()
+                        .padding(.vertical, 4)
+
+                    // Timing (global FPS, Loop Count)
+                    TimingSection(settings: appState.exportSettings)
 
                     // Frame Timing (per-frame, only when selected)
                     FrameTimingSection(appState: appState)
 
-                    // Timing (FPS, Loop Count)
-                    TimingSection(settings: appState.exportSettings)
-
-                    // Canvas Options
-                    ResizeSection(settings: appState.exportSettings)
+                    // Transform (per-frame, only when selected)
+                    TransformSection(appState: appState)
 
                     Spacer(minLength: 20)
                 }

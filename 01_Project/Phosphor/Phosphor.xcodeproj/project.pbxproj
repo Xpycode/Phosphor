@@ -41,6 +41,7 @@
 		FRAMETRANSF00000000000001 /* FrameTransform.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRAMETRANSF00000000000002 /* FrameTransform.swift */; };
 		HZY1VOA1GF197GRPFQ4DWYMJ /* TimingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = UHJ6KJPQT11P69Z2BGNTKMXH /* TimingSection.swift */; };
 		P1A2B3C4D5E6F7890123457A /* PlaybackControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P1A2B3C4D5E6F7890123457B /* PlaybackControlsView.swift */; };
+		UNIFIEDTOOL00000000000001 /* UnifiedToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = UNIFIEDTOOL00000000000002 /* UnifiedToolbar.swift */; };
 		POSITIONANC00000000000001 /* PositionAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = POSITIONANC00000000000002 /* PositionAnchor.swift */; };
 		QEIK44WK9X6NSG0WAU5Q8CLC /* ResizeSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMPAE8CC8A8MOWQP3LT5EL2P /* ResizeSection.swift */; };
 		TRANSFORMSEC0000000000001 /* TransformSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = TRANSFORMSEC0000000000002 /* TransformSection.swift */; };
@@ -87,6 +88,7 @@
 		POSITIONANC00000000000002 /* PositionAnchor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositionAnchor.swift; sourceTree = "<group>"; };
 		TRANSFORMSEC0000000000002 /* TransformSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransformSection.swift; sourceTree = "<group>"; };
 		UHJ6KJPQT11P69Z2BGNTKMXH /* TimingSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimingSection.swift; sourceTree = "<group>"; };
+		UNIFIEDTOOL00000000000002 /* UnifiedToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedToolbar.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -188,6 +190,7 @@
 				F1A2B3C4D5E6F7890123456B /* FrameThumbnailView.swift */,
 				CC2BD3C6676E4D6CAF15C554 /* TimelineToolbar.swift */,
 				P1A2B3C4D5E6F7890123457B /* PlaybackControlsView.swift */,
+				UNIFIEDTOOL00000000000002 /* UnifiedToolbar.swift */,
 				3F7CB8B6542C4B468B946DBB /* SettingsSidebar.swift */,
 				E157245B41BF40B8894890DC /* TimelinePane.swift */,
 				317866EB8FF54ACCA54C44CC /* PreviewPane.swift */,
@@ -337,6 +340,7 @@
 				TRANSFORMSEC0000000000001 /* TransformSection.swift in Sources */,
 				POSITIONANC00000000000001 /* PositionAnchor.swift in Sources */,
 				ANCHORGRID000000000000001 /* AnchorGridView.swift in Sources */,
+				UNIFIEDTOOL00000000000001 /* UnifiedToolbar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

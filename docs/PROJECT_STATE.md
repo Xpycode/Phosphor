@@ -7,7 +7,7 @@
 - **Last Session:** 2026-02-01
 
 ## Current Focus
-**Phase 11 COMPLETE** - Undo/Redo, Per-Frame Timing, Export Dialog complete.
+**Phase 12.1 COMPLETE** - Playback fixes & toolbar unification.
 
 ### Completed (Phase 1):
 - ✅ Clean slate - deleted all buggy 6-pane code
@@ -108,10 +108,26 @@
 - ✅ Export Dialog sheet (moved format/quality out of sidebar)
 - ✅ Build succeeds
 
-### Next Actions (Phase 12):
-- [ ] QA testing: Undo/Redo edge cases (empty undo stack, max depth)
-- [ ] QA testing: Per-frame timing edge cases (very long/short delays)
-- [ ] QA testing: Export dialog validation (empty frames, invalid settings)
+### Completed (Phase 12.1 - Playback Fixes & Toolbar Unification):
+- ✅ **Bug fix:** Playback now skips muted frames (advanceFrame() updated)
+- ✅ **Bug fix:** Drag-to-reorder works (UTType .text → .plainText)
+- ✅ **UI:** UnifiedToolbar consolidates Add Images, scrubber, play/pause, frame counter, zoom
+- ✅ **UI:** Frame counter shows "2/35 (40)" format (current/active (total))
+- ✅ **UI:** Empty state has prominent "Add Images" button
+- ✅ **Feature:** Arrow keys (←/→) navigate unmuted frames, Space toggles playback
+- ✅ **Fix:** Swift 6 concurrency - @MainActor on Command protocol
+- ✅ Build succeeds
+
+### Completed (Phase 12.2):
+- ✅ **Bug fix:** Drag-to-reorder now uses modern `draggable`/`dropDestination` API
+- ✅ **Bug fix:** Drop indicator always rendered (opacity toggle) to prevent layout shifts
+- ✅ **UI:** Sidebar reordered: Canvas → Timing → Frame Timing → Transform
+- ✅ **UI:** Frame scrubber slider expanded (min 150, max 400)
+
+### Next Actions (Phase 12.3+):
+- [ ] Test drag-to-reorder with undo/redo
+- [ ] Test edge cases: single frame, all muted, mute during playback
+- [ ] Rename "Mute" → "Skip" or "Disable" (QA feedback)
 - [ ] App icon design + implementation
 - [ ] User guide documentation
 
@@ -138,12 +154,14 @@ None - ready to implement
 12. [x] Phase 9: WebP export ✅
 13. [x] Phase 10: Aspect ratio lock ✅
 14. [x] Phase 11: Undo/Redo, Per-Frame Timing, Export Dialog ✅
-15. [ ] QA testing + polish
+15. [x] Phase 12.1: Playback fixes, UnifiedToolbar, arrow keys ✅
+16. [ ] Phase 12.2: QA testing + terminology fixes
+17. [ ] App icon + documentation
 
 ## Git State
 - Branch: `main`
 - Last commit: `c19089d` - feat(phase11): add Undo/Redo, per-frame timing, and export dialog
-- All Phase 1-11 features committed and pushed
+- **Uncommitted:** Phase 12.1 changes (playback fixes, UnifiedToolbar)
 
 ---
 *Updated: 2026-02-01*

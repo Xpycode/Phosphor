@@ -24,7 +24,7 @@ struct ContentView: View {
 
                     // Timeline section (toolbar + thumbnails) with darker background
                     VStack(spacing: 0) {
-                        TimelineToolbar(
+                        UnifiedToolbar(
                             appState: appState,
                             availableWidth: geometry.size.width,
                             onImport: showImportPanel
@@ -32,7 +32,7 @@ struct ContentView: View {
 
                         Divider()
 
-                        TimelinePane(appState: appState)
+                        TimelinePane(appState: appState, onImport: showImportPanel)
                             .frame(minHeight: 120)
                     }
                     .background(Color(nsColor: .windowBackgroundColor).opacity(0.6))

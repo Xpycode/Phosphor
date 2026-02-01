@@ -10,6 +10,7 @@ import UniformTypeIdentifiers
 
 struct TimelinePane: View {
     @ObservedObject var appState: AppState
+    var onImport: (() -> Void)?
 
     @State private var draggedFrameID: UUID?
     @State private var dropTargetIndex: Int?
@@ -40,10 +41,20 @@ struct TimelinePane: View {
     }
 
     private var emptyStateView: some View {
-        ContentUnavailableView {
-            Label("Drop Images", systemImage: "arrow.down.doc")
-        } description: {
-            Text("Drag image files here to add them to your animation")
+        VStack(spacing: 16) {
+            ContentUnavailableView {
+                Label("No Images", systemImage: "photo.on.rectangle.angled")
+            } description: {
+                Text("Drag images here or click Add Images")
+            }
+
+            if let onImport = onImport {
+                Button("Add Images") {
+                    onImport()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -52,46 +63,81 @@ struct TimelinePane: View {
         ScrollView(.horizontal, showsIndicators: true) {
             HStack(spacing: 8) {
                 ForEach(Array(appState.frames.enumerated()), id: \.element.id) { index, frame in
-                    ZStack {
-                        Button {
-                            appState.selectedFrameIndex = index
-                        } label: {
-                            FrameThumbnailView(
-                                imageItem: frame,
-                                index: index,
-                                isSelected: appState.selectedFrameIndex == index,
-                                isMuted: frame.isMuted,
-                                thumbnailWidth: appState.thumbnailWidth,
-                                onDelete: { appState.removeFrame(at: index) },
-                                onToggleMute: { appState.toggleMute(at: index) }
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .opacity(draggedFrameID == frame.id ? 0.5 : 1.0)
-                        .onDrag {
-                            draggedFrameID = frame.id
-                            return NSItemProvider(object: frame.id.uuidString as NSString)
-                        }
-                        .onDrop(of: [.text], delegate: FrameDropDelegate(
-                            draggedFrameID: $draggedFrameID,
-                            dropTargetIndex: $dropTargetIndex,
-                            frames: appState.frames,
-                            destinationIndex: index,
-                            appState: appState
-                        ))
-
-                        if dropTargetIndex == index {
-                            Rectangle()
-                                .fill(Color.blue)
-                                .frame(width: 3)
-                                .frame(maxHeight: .infinity)
-                                .offset(x: -(appState.thumbnailWidth / 2 + 4))
-                        }
-                    }
+                    thumbnailWithDropZone(frame: frame, index: index)
                 }
             }
             .padding(8)
         }
+    }
+
+    @ViewBuilder
+    private func thumbnailWithDropZone(frame: ImageItem, index: Int) -> some View {
+        let thumbnailHeight = appState.thumbnailWidth * 0.75  // 4:3 aspect ratio
+
+        HStack(spacing: 0) {
+            // Drop indicator (always present, visibility controlled by opacity)
+            Rectangle()
+                .fill(Color.accentColor)
+                .frame(width: 3, height: thumbnailHeight)
+                .opacity(dropTargetIndex == index ? 1.0 : 0.0)
+                .padding(.trailing, 4)
+
+            // Thumbnail button
+            Button {
+                appState.selectedFrameIndex = index
+            } label: {
+                FrameThumbnailView(
+                    imageItem: frame,
+                    index: index,
+                    isSelected: appState.selectedFrameIndex == index,
+                    isMuted: frame.isMuted,
+                    thumbnailWidth: appState.thumbnailWidth,
+                    onDelete: { appState.removeFrame(at: index) },
+                    onToggleMute: { appState.toggleMute(at: index) }
+                )
+            }
+            .buttonStyle(.plain)
+            .opacity(draggedFrameID == frame.id ? 0.5 : 1.0)
+            .draggable(frame.id.uuidString) {
+                // Drag preview
+                FrameThumbnailView(
+                    imageItem: frame,
+                    index: index,
+                    isSelected: true,
+                    isMuted: frame.isMuted,
+                    thumbnailWidth: appState.thumbnailWidth,
+                    onDelete: {},
+                    onToggleMute: {}
+                )
+                .onAppear { draggedFrameID = frame.id }
+            }
+            .dropDestination(for: String.self) { items, location in
+                handleFrameDrop(droppedItems: items, destinationIndex: index)
+            } isTargeted: { isTargeted in
+                if isTargeted {
+                    dropTargetIndex = index
+                } else if dropTargetIndex == index {
+                    dropTargetIndex = nil
+                }
+            }
+        }
+    }
+
+    private func handleFrameDrop(droppedItems: [String], destinationIndex: Int) -> Bool {
+        guard let draggedID = draggedFrameID,
+              let sourceIndex = appState.frames.firstIndex(where: { $0.id == draggedID }) else {
+            draggedFrameID = nil
+            dropTargetIndex = nil
+            return false
+        }
+
+        if sourceIndex != destinationIndex {
+            appState.reorderFrames(from: IndexSet(integer: sourceIndex), to: destinationIndex)
+        }
+
+        draggedFrameID = nil
+        dropTargetIndex = nil
+        return true
     }
 
     private func showImportPanel() {
@@ -138,44 +184,8 @@ struct TimelinePane: View {
     }
 }
 
-struct FrameDropDelegate: DropDelegate {
-    @Binding var draggedFrameID: UUID?
-    @Binding var dropTargetIndex: Int?
-    let frames: [ImageItem]
-    let destinationIndex: Int
-    let appState: AppState
-
-    func dropEntered(info: DropInfo) {
-        dropTargetIndex = destinationIndex
-    }
-
-    func dropExited(info: DropInfo) {
-        if dropTargetIndex == destinationIndex {
-            dropTargetIndex = nil
-        }
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        guard let draggedID = draggedFrameID,
-              let sourceIndex = frames.firstIndex(where: { $0.id == draggedID }) else {
-            return false
-        }
-
-        if sourceIndex != destinationIndex {
-            appState.reorderFrames(from: IndexSet(integer: sourceIndex), to: destinationIndex)
-        }
-
-        draggedFrameID = nil
-        dropTargetIndex = nil
-        return true
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        return DropProposal(operation: .move)
-    }
-}
 
 #Preview {
-    TimelinePane(appState: AppState())
+    TimelinePane(appState: AppState(), onImport: {})
         .frame(height: 150)
 }
