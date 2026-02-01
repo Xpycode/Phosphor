@@ -141,9 +141,9 @@ None - ready to implement
 15. [ ] QA testing + polish
 
 ## Git State
-- Branch: `feature/6-pane-workspace` (buggy, to be replaced)
-- Last stable: `30ba339`
-- Salvaged code backed up and documented
+- Branch: `main`
+- Last commit: `c19089d` - feat(phase11): add Undo/Redo, per-frame timing, and export dialog
+- All Phase 1-11 features committed and pushed
 
 ---
 *Updated: 2026-02-01*
