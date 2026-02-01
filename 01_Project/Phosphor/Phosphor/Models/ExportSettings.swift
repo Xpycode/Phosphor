@@ -77,6 +77,19 @@ enum ResizeInstruction {
     case fit(size: CGSize, backgroundColor: NSColor)
 }
 
+extension ResizeInstruction {
+    var targetSize: CGSize {
+        switch self {
+        case .scale:
+            fatalError("Scale mode does not have a fixed target size")
+        case let .fill(size):
+            return size
+        case let .fit(size, _):
+            return size
+        }
+    }
+}
+
 enum CanvasMode: String, CaseIterable, Identifiable {
     case original  // Use source image dimensions (no resize)
     case preset
@@ -302,6 +315,10 @@ class ExportSettings: ObservableObject {
             let height = max(1, canvasHeight)
             return CGSize(width: width, height: height)
         }
+    }
+
+    var effectiveCanvasSize: CGSize {
+        resolvedCanvasSize ?? automaticCanvasSize ?? CGSize(width: 640, height: 480)
     }
 
     var effectiveFrameSkipInterval: Int {

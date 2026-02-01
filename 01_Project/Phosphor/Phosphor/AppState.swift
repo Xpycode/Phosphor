@@ -13,6 +13,10 @@ import AppKit
 /// Holds the frames array and export settings
 @MainActor
 class AppState: ObservableObject {
+    // MARK: - Undo/Redo
+    let undoManager = PhosphorUndoManager()
+    @Published var isImporting: Bool = false
+
     // MARK: - Frame Data
 
     /// All imported image frames
@@ -101,20 +105,45 @@ class AppState: ObservableObject {
 
     init() {}
 
+    // MARK: - Per-Frame Timing
+
+    /// Build per-frame delays array for export.
+    /// Returns nil if no custom delays set (enables exporter optimization).
+    func buildPerFrameDelays() -> [Double]? {
+        let delays = unmutedFrames.map { frame -> Double in
+            // customDelay is in ms, convert to seconds for exporters
+            (frame.customDelay ?? exportSettings.frameDelay) / 1000.0
+        }
+        let hasCustom = unmutedFrames.contains { $0.customDelay != nil }
+        return hasCustom ? delays : nil
+    }
+
     // MARK: - Playback Control
 
-    /// Start the playback timer based on current frame rate
+    /// Start the playback timer based on current frame rate (with per-frame timing)
     private func startPlayback() {
         guard hasFrames else {
             isPlaying = false
             return
         }
+        scheduleNextFrame()
+    }
 
-        let interval = 1.0 / exportSettings.frameRate
+    /// Schedule the next frame with per-frame timing support
+    private func scheduleNextFrame() {
+        guard isPlaying, hasFrames else { return }
+
+        let currentFrame = frames[currentPreviewIndex]
+        let delayMs = currentFrame.customDelay ?? exportSettings.frameDelay
+        let interval = delayMs / 1000.0
+
+        playbackTimer?.cancel()
         playbackTimer = Timer.publish(every: interval, on: .main, in: .common)
             .autoconnect()
+            .first()
             .sink { [weak self] _ in
                 self?.advanceFrame()
+                self?.scheduleNextFrame()
             }
     }
 
@@ -175,15 +204,21 @@ class AppState: ObservableObject {
             }
         }
 
-        let hadFrames = hasFrames
-        frames.append(contentsOf: importedItems)
+        guard !importedItems.isEmpty else { return }
 
+        isImporting = true
+
+        let command = ImportFramesCommand(frames: importedItems)
+        try? undoManager.perform(command, on: self)
+
+        let hadFrames = !frames.filter { !importedItems.contains($0) }.isEmpty
         if !hadFrames && hasFrames {
             selectedFrameIndex = 0
         }
 
-        // Update automatic canvas size based on largest frame
         updateAutomaticCanvasSize()
+
+        isImporting = false
     }
 
     /// Calculate the largest frame dimensions and update automaticCanvasSize
@@ -207,7 +242,9 @@ class AppState: ObservableObject {
     func removeFrame(at index: Int) {
         guard frames.indices.contains(index) else { return }
 
-        frames.remove(at: index)
+        let frame = frames[index]
+        let command = DeleteFrameCommand(frame: frame, at: index)
+        try? undoManager.perform(command, on: self)
 
         if let selected = selectedFrameIndex {
             if selected == index {
@@ -224,13 +261,13 @@ class AppState: ObservableObject {
 
     /// Reorder frames using drag and drop
     func reorderFrames(from source: IndexSet, to destination: Int) {
+        let command = ReorderFramesCommand(from: source, to: destination, currentFrames: frames)
+        try? undoManager.perform(command, on: self)
+
         guard let selectedIndex = selectedFrameIndex,
               let movedIndex = source.first else {
-            frames.move(fromOffsets: source, toOffset: destination)
             return
         }
-
-        frames.move(fromOffsets: source, toOffset: destination)
 
         if source.contains(selectedIndex) {
             if destination > movedIndex {
@@ -250,10 +287,210 @@ class AppState: ObservableObject {
     /// Toggle the muted state of the frame at the specified index
     func toggleMute(at index: Int) {
         guard frames.indices.contains(index) else { return }
-        frames[index].isMuted.toggle()
+        let frameID = frames[index].id
+        let command = ToggleMuteCommand(frameID: frameID)
+        try? undoManager.perform(command, on: self)
+    }
+
+    // MARK: - Transform Management
+
+    /// Whether to show confirmation dialog for Apply to All
+    @Published var showApplyTransformToAllConfirmation: Bool = false
+
+    /// Rotate the selected frame by the given degrees (90, -90, or 180)
+    func rotateSelectedFrame(by degrees: Int) {
+        guard let index = selectedFrameIndex else { return }
+
+        let oldTransform = frames[index].transform
+        var newTransform = oldTransform
+
+        switch degrees {
+        case 90:
+            newTransform.rotate90Clockwise()
+        case -90:
+            newTransform.rotate90CounterClockwise()
+        case 180:
+            newTransform.rotate180()
+        default:
+            break
+        }
+
+        let command = TransformCommand(
+            frameID: frames[index].id,
+            oldTransform: oldTransform,
+            newTransform: newTransform,
+            actionName: "Rotate Frame"
+        )
+        try? undoManager.perform(command, on: self)
+    }
+
+    /// Update the scale of the selected frame
+    func updateSelectedFrameScale(_ scale: Double) {
+        guard let index = selectedFrameIndex else { return }
+
+        let oldTransform = frames[index].transform
+        var newTransform = oldTransform
+        newTransform.scale = scale
+
+        let currentX = newTransform.offsetX
+        let currentY = newTransform.offsetY
+        let clamped = clampedOffset(x: currentX, y: currentY, for: frames[index], scale: scale)
+        newTransform.offsetX = clamped.x
+        newTransform.offsetY = clamped.y
+
+        let command = TransformCommand(
+            frameID: frames[index].id,
+            oldTransform: oldTransform,
+            newTransform: newTransform,
+            actionName: "Scale Frame"
+        )
+        try? undoManager.perform(command, on: self)
+    }
+
+    /// Update the offset of the selected frame with bounds clamping
+    /// Pass nil to keep the current value for that axis
+    func updateSelectedFrameOffset(x: CGFloat?, y: CGFloat?) {
+        guard let index = selectedFrameIndex else { return }
+
+        let oldTransform = frames[index].transform
+        var newTransform = oldTransform
+
+        let newX = x ?? oldTransform.offsetX
+        let newY = y ?? oldTransform.offsetY
+        let clamped = clampedOffset(x: newX, y: newY, for: frames[index])
+        newTransform.offsetX = clamped.x
+        newTransform.offsetY = clamped.y
+
+        let command = TransformCommand(
+            frameID: frames[index].id,
+            oldTransform: oldTransform,
+            newTransform: newTransform,
+            actionName: "Move Frame"
+        )
+        try? undoManager.perform(command, on: self)
+    }
+
+    /// Clamp offset to keep image covering the canvas
+    private func clampedOffset(x: CGFloat, y: CGFloat, for frame: ImageItem, scale: Double? = nil) -> (x: CGFloat, y: CGFloat) {
+        guard let image = NSImage(contentsOf: frame.url) else {
+            return (x, y)
+        }
+
+        let imageSize = image.size
+        let canvasSize = exportSettings.effectiveCanvasSize
+        let frameScale = scale ?? frame.transform.scale
+
+        let scaledImage = CGSize(
+            width: imageSize.width * frameScale / 100,
+            height: imageSize.height * frameScale / 100
+        )
+
+        // Calculate max offset that keeps image covering canvas
+        let maxOffsetX = abs(scaledImage.width - canvasSize.width) / 2
+        let maxOffsetY = abs(scaledImage.height - canvasSize.height) / 2
+
+        return (
+            x: max(-maxOffsetX, min(maxOffsetX, x)),
+            y: max(-maxOffsetY, min(maxOffsetY, y))
+        )
+    }
+
+    /// Reset the selected frame's transform to identity
+    func resetSelectedFrameTransform() {
+        guard let index = selectedFrameIndex else { return }
+
+        let oldTransform = frames[index].transform
+        let newTransform = FrameTransform.identity
+
+        let command = TransformCommand(
+            frameID: frames[index].id,
+            oldTransform: oldTransform,
+            newTransform: newTransform,
+            actionName: "Reset Transform"
+        )
+        try? undoManager.perform(command, on: self)
+    }
+
+    /// Apply the selected frame's transform to all frames
+    func applyTransformToAllFrames() {
+        guard let index = selectedFrameIndex else { return }
+        let transform = frames[index].transform
+
+        for i in frames.indices {
+            frames[i].transform = transform
+        }
+    }
+
+    /// Apply anchor preset to selected frame
+    func applyAnchorPreset(
+        _ anchor: PositionAnchor,
+        imageSize: CGSize,
+        canvasSize: CGSize,
+        scale: Double
+    ) {
+        guard let index = selectedFrameIndex else { return }
+
+        let oldTransform = frames[index].transform
+        var newTransform = oldTransform
+
+        let offset = anchor.offset(imageSize: imageSize, canvasSize: canvasSize, scale: scale)
+        newTransform.offsetX = offset.x
+        newTransform.offsetY = offset.y
+
+        let command = TransformCommand(
+            frameID: frames[index].id,
+            oldTransform: oldTransform,
+            newTransform: newTransform,
+            actionName: "Apply Anchor"
+        )
+        try? undoManager.perform(command, on: self)
     }
 
     // MARK: - Export
+
+    /// Execute export with progress callback (for ExportSheet)
+    func executeExportWithProgress(to url: URL, frames: [ImageItem], onProgress: @escaping (Double) -> Void) async throws {
+        let frameDelaySeconds = exportSettings.frameDelay / 1000.0
+
+        switch exportSettings.format {
+        case .gif:
+            try await GIFExporter.export(
+                images: frames,
+                to: url,
+                frameDelay: frameDelaySeconds,
+                loopCount: exportSettings.loopCount,
+                quality: exportSettings.quality,
+                dithering: exportSettings.enableDithering,
+                resizeInstruction: exportSettings.resizeInstruction,
+                colorDepthLevels: exportSettings.clampedColorDepthLevels > 0 ? exportSettings.clampedColorDepthLevels : nil,
+                perFrameDelays: buildPerFrameDelays(),
+                progressHandler: onProgress
+            )
+
+        case .apng:
+            try await APNGExporter.export(
+                images: frames,
+                to: url,
+                frameDelay: frameDelaySeconds,
+                loopCount: exportSettings.loopCount,
+                resizeInstruction: exportSettings.resizeInstruction,
+                perFrameDelays: buildPerFrameDelays(),
+                progressHandler: onProgress
+            )
+
+        case .webp:
+            try await WebPExporter.export(
+                images: frames,
+                to: url,
+                frameDelay: frameDelaySeconds,
+                loopCount: exportSettings.loopCount,
+                quality: exportSettings.quality,
+                resizeInstruction: exportSettings.resizeInstruction,
+                perFrameDelays: buildPerFrameDelays(),
+                progressHandler: onProgress
+            )
+        }
+    }
 
     /// Perform export with save dialog
     func performExport() {
@@ -298,7 +535,7 @@ class AppState: ObservableObject {
                     dithering: exportSettings.enableDithering,
                     resizeInstruction: exportSettings.resizeInstruction,
                     colorDepthLevels: exportSettings.clampedColorDepthLevels > 0 ? exportSettings.clampedColorDepthLevels : nil,
-                    perFrameDelays: nil,
+                    perFrameDelays: buildPerFrameDelays(),
                     progressHandler: { [weak self] progress in
                         self?.exportProgress = progress
                     }
@@ -311,7 +548,7 @@ class AppState: ObservableObject {
                     frameDelay: frameDelaySeconds,
                     loopCount: exportSettings.loopCount,
                     resizeInstruction: exportSettings.resizeInstruction,
-                    perFrameDelays: nil,
+                    perFrameDelays: buildPerFrameDelays(),
                     progressHandler: { [weak self] progress in
                         self?.exportProgress = progress
                     }
@@ -325,7 +562,7 @@ class AppState: ObservableObject {
                     loopCount: exportSettings.loopCount,
                     quality: exportSettings.quality,
                     resizeInstruction: exportSettings.resizeInstruction,
-                    perFrameDelays: nil,
+                    perFrameDelays: buildPerFrameDelays(),
                     progressHandler: { [weak self] progress in
                         self?.exportProgress = progress
                     }

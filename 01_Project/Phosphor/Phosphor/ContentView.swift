@@ -48,6 +48,14 @@ struct ContentView: View {
         .focusedValue(\.importAction, showImportPanel)
         .focusedValue(\.exportAction, appState.performExport)
         .focusedValue(\.canExport, !appState.unmutedFrames.isEmpty && !appState.isExporting)
+        .focusedValue(\.undoAction, performUndo)
+        .focusedValue(\.redoAction, performRedo)
+        .focusedValue(\.canUndo, appState.undoManager.canUndo)
+        .focusedValue(\.canRedo, appState.undoManager.canRedo)
+        .focusedValue(\.undoActionName, appState.undoManager.currentUndoActionName)
+        .focusedValue(\.redoActionName, appState.undoManager.currentRedoActionName)
+        .focusedValue(\.isImporting, appState.isImporting)
+        .focusedValue(\.isExporting, appState.isExporting)
     }
 
     private func showImportPanel() {
@@ -62,6 +70,14 @@ struct ContentView: View {
                 await appState.importImages(urls: panel.urls)
             }
         }
+    }
+
+    private func performUndo() {
+        try? appState.undoManager.undo(on: appState)
+    }
+
+    private func performRedo() {
+        try? appState.undoManager.redo(on: appState)
     }
 }
 

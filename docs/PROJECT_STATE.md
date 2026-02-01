@@ -3,11 +3,11 @@
 ## Quick Facts
 - **Project:** Phosphor - macOS animated GIF/WebP/APNG creator
 - **Started:** November 2025
-- **Current Phase:** implementation (fresh restart)
-- **Last Session:** 2026-01-31
+- **Current Phase:** Phase 12 (QA + Polish)
+- **Last Session:** 2026-02-01
 
 ## Current Focus
-**Phase 8 COMPLETE** - Canvas-aware preview with live Fit/Fill visualization.
+**Phase 11 COMPLETE** - Undo/Redo, Per-Frame Timing, Export Dialog complete.
 
 ### Completed (Phase 1):
 - ✅ Clean slate - deleted all buggy 6-pane code
@@ -102,9 +102,18 @@
 - ✅ Proportional updates when locked
 - ✅ Auto-initialize from source image dimensions
 
-### Ready for Phase 11:
-- Per-frame rotation (optional)
-- App icon
+### Completed (Phase 11 - Undo/Timing/Export Dialog):
+- ✅ Undo/Redo system with Command pattern (⌘Z/⌘⇧Z)
+- ✅ Per-frame timing (customDelay, FrameTimingSection)
+- ✅ Export Dialog sheet (moved format/quality out of sidebar)
+- ✅ Build succeeds
+
+### Next Actions (Phase 12):
+- [ ] QA testing: Undo/Redo edge cases (empty undo stack, max depth)
+- [ ] QA testing: Per-frame timing edge cases (very long/short delays)
+- [ ] QA testing: Export dialog validation (empty frames, invalid settings)
+- [ ] App icon design + implementation
+- [ ] User guide documentation
 
 ## Key Decisions Made
 [See decisions.md for full history]
@@ -128,7 +137,8 @@ None - ready to implement
 11. [x] APNG export verified ✅
 12. [x] Phase 9: WebP export ✅
 13. [x] Phase 10: Aspect ratio lock ✅
-14. [ ] Polish and bug fixes
+14. [x] Phase 11: Undo/Redo, Per-Frame Timing, Export Dialog ✅
+15. [ ] QA testing + polish
 
 ## Git State
 - Branch: `feature/6-pane-workspace` (buggy, to be replaced)
@@ -136,4 +146,4 @@ None - ready to implement
 - Salvaged code backed up and documented
 
 ---
-*Updated: 2026-01-31*
+*Updated: 2026-02-01*

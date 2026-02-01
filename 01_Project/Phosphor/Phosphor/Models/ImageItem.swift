@@ -19,6 +19,13 @@ struct ImageItem: Identifiable, Equatable {
     let modificationDate: Date
     var isMuted: Bool = false
 
+    /// Per-frame transform (rotation, scale, position)
+    var transform: FrameTransform = .identity
+
+    /// Per-frame delay override in milliseconds.
+    /// nil indicates frame inherits global FPS; non-nil enables per-frame timing.
+    var customDelay: Double? = nil
+
     var fileName: String {
         url.lastPathComponent
     }
@@ -280,6 +287,69 @@ extension NSImage {
         let b = CGFloat(bytes[2]) / 255.0
 
         return NSColor(red: r, green: g, blue: b, alpha: 1.0)
+    }
+
+    /// Apply per-frame transform and return transformed image on canvas
+    func applying(transform: FrameTransform, canvasSize: CGSize) -> NSImage {
+        guard !transform.isIdentity else { return self }
+        
+        let rotated = self.rotated(by: transform.rotation)
+        
+        let scaleFactor = transform.scale / 100.0
+        let scaledSize = CGSize(
+            width: rotated.size.width * scaleFactor,
+            height: rotated.size.height * scaleFactor
+        )
+        let scaled = rotated.resized(to: scaledSize, preservingAspectRatio: false)
+        
+        let canvas = NSImage(size: canvasSize)
+        canvas.lockFocus()
+        
+        NSColor.clear.setFill()
+        NSRect(origin: .zero, size: canvasSize).fill()
+        
+        let drawOrigin = CGPoint(
+            x: (canvasSize.width - scaledSize.width) / 2 + transform.offsetX,
+            y: (canvasSize.height - scaledSize.height) / 2 + transform.offsetY
+        )
+        
+        scaled.draw(
+            in: CGRect(origin: drawOrigin, size: scaledSize),
+            from: .zero,
+            operation: .sourceOver,
+            fraction: 1.0
+        )
+        
+        canvas.unlockFocus()
+        return canvas
+    }
+    
+    /// Rotate image by degrees (0, 90, 180, 270)
+    func rotated(by degrees: Int) -> NSImage {
+        guard degrees != 0 else { return self }
+        
+        let radians = CGFloat(degrees) * .pi / 180
+        let newSize: CGSize
+        
+        if degrees == 90 || degrees == 270 {
+            newSize = CGSize(width: size.height, height: size.width)
+        } else {
+            newSize = size
+        }
+        
+        let rotatedImage = NSImage(size: newSize)
+        rotatedImage.lockFocus()
+        
+        let transform = NSAffineTransform()
+        transform.translateX(by: newSize.width / 2, yBy: newSize.height / 2)
+        transform.rotate(byRadians: radians)
+        transform.translateX(by: -size.width / 2, yBy: -size.height / 2)
+        transform.concat()
+        
+        self.draw(at: .zero, from: .zero, operation: .sourceOver, fraction: 1.0)
+        
+        rotatedImage.unlockFocus()
+        return rotatedImage
     }
 }
 

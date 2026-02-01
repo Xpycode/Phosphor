@@ -11,6 +11,11 @@ struct PreviewPane: View {
     @ObservedObject var appState: AppState
     @ObservedObject var settings: ExportSettings
 
+    /// Track the base offset when drag begins
+    @State private var dragBaseOffset: CGPoint = .zero
+    /// Track if a drag is currently active
+    @State private var isDragging: Bool = false
+
     /// The frame currently being displayed
     private var displayedFrame: ImageItem? {
         guard appState.hasFrames else { return nil }
@@ -58,14 +63,37 @@ struct PreviewPane: View {
     private func originalPreview(frame: ImageItem) -> some View {
         GeometryReader { geometry in
             if let nsImage = NSImage(contentsOf: frame.url) {
+                let fittedSize = calculateFittedSize(
+                    imageSize: nsImage.size,
+                    availableSize: geometry.size,
+                    margin: 0.9
+                )
+
                 Image(nsImage: nsImage)
                     .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: geometry.size.width, maxHeight: geometry.size.height)
+                    .frame(width: fittedSize.width, height: fittedSize.height)
                     .frame(width: geometry.size.width, height: geometry.size.height)
             } else {
                 imageLoadError
             }
+        }
+    }
+
+    /// Calculate fitted size for an image within available space
+    private func calculateFittedSize(imageSize: CGSize, availableSize: CGSize, margin: CGFloat) -> CGSize {
+        let availableAspect = availableSize.width / availableSize.height
+        let imageAspect = imageSize.width / imageSize.height
+
+        if imageAspect > availableAspect {
+            return CGSize(
+                width: availableSize.width * margin,
+                height: availableSize.width * margin / imageAspect
+            )
+        } else {
+            return CGSize(
+                width: availableSize.height * margin * imageAspect,
+                height: availableSize.height * margin
+            )
         }
     }
 
@@ -75,25 +103,31 @@ struct PreviewPane: View {
     private func canvasPreview(frame: ImageItem, aspectRatio: CGFloat) -> some View {
         GeometryReader { geometry in
             // Calculate canvas frame size to fit within the preview area
-            let canvasSize = calculateCanvasSize(
+            let previewCanvasSize = calculateCanvasSize(
                 aspectRatio: aspectRatio,
                 availableSize: geometry.size
             )
+
+            // Calculate scale factor for transform preview
+            let actualCanvasSize = settings.resolvedCanvasSize ?? CGSize(width: 100, height: 100)
+            let previewScale = previewCanvasSize.width / actualCanvasSize.width
 
             ZStack {
                 // Canvas background (visible in Fit mode as letterbox)
                 if settings.scaleMode == .fit {
                     canvasBackground
-                        .frame(width: canvasSize.width, height: canvasSize.height)
+                        .frame(width: previewCanvasSize.width, height: previewCanvasSize.height)
                 }
 
-                // The image, scaled according to mode
+                // The image with transforms
                 if let nsImage = NSImage(contentsOf: frame.url) {
-                    Image(nsImage: nsImage)
-                        .resizable()
-                        .aspectRatio(contentMode: settings.scaleMode == .fill ? .fill : .fit)
-                        .frame(width: canvasSize.width, height: canvasSize.height)
-                        .clipped()
+                    canvasImage(
+                        nsImage: nsImage,
+                        frame: frame,
+                        previewCanvasSize: previewCanvasSize,
+                        actualCanvasSize: actualCanvasSize,
+                        previewScale: previewScale
+                    )
                 } else {
                     imageLoadError
                 }
@@ -101,10 +135,127 @@ struct PreviewPane: View {
                 // Canvas border indicator
                 RoundedRectangle(cornerRadius: 2)
                     .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    .frame(width: canvasSize.width, height: canvasSize.height)
+                    .frame(width: previewCanvasSize.width, height: previewCanvasSize.height)
             }
+            .frame(width: previewCanvasSize.width, height: previewCanvasSize.height)
+            .clipped()
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
+    }
+
+    /// Calculate filled/fitted image size for canvas
+    private func calculateCanvasImageSize(
+        imageSize: CGSize,
+        canvasSize: CGSize,
+        scaleMode: ScaleMode
+    ) -> CGSize {
+        let imageAspect = imageSize.width / imageSize.height
+        let canvasAspect = canvasSize.width / canvasSize.height
+
+        if scaleMode == .fill {
+            // Fill: image covers canvas, may extend beyond
+            if imageAspect > canvasAspect {
+                return CGSize(
+                    width: canvasSize.height * imageAspect,
+                    height: canvasSize.height
+                )
+            } else {
+                return CGSize(
+                    width: canvasSize.width,
+                    height: canvasSize.width / imageAspect
+                )
+            }
+        } else {
+            // Fit: image fits within canvas, may have letterbox
+            if imageAspect > canvasAspect {
+                return CGSize(
+                    width: canvasSize.width,
+                    height: canvasSize.width / imageAspect
+                )
+            } else {
+                return CGSize(
+                    width: canvasSize.height * imageAspect,
+                    height: canvasSize.height
+                )
+            }
+        }
+    }
+
+    /// Image fitted to canvas with transforms applied correctly
+    @ViewBuilder
+    private func canvasImage(
+        nsImage: NSImage,
+        frame: ImageItem,
+        previewCanvasSize: CGSize,
+        actualCanvasSize: CGSize,
+        previewScale: CGFloat
+    ) -> some View {
+        let transform = frame.transform
+        let imageSize = nsImage.size
+        let canDrag = appState.selectedFrameIndex != nil
+
+        // Calculate fitted image size (how big the image is after aspectRatio fill/fit)
+        let fittedSize = calculateCanvasImageSize(
+            imageSize: imageSize,
+            canvasSize: actualCanvasSize,
+            scaleMode: settings.scaleMode
+        )
+
+        // Apply user scale on top of the fitted size
+        let scaledSize = CGSize(
+            width: fittedSize.width * transform.scale / 100,
+            height: fittedSize.height * transform.scale / 100
+        )
+
+        // Calculate max pan offset (how much extra image extends beyond canvas)
+        let maxPanX = max(0, (scaledSize.width - actualCanvasSize.width) / 2)
+        let maxPanY = max(0, (scaledSize.height - actualCanvasSize.height) / 2)
+
+        // Clamp offset to valid range
+        let clampedOffsetX = max(-maxPanX, min(maxPanX, transform.offsetX))
+        let clampedOffsetY = max(-maxPanY, min(maxPanY, transform.offsetY))
+
+        // Scale to preview coordinates
+        let previewOffsetX = clampedOffsetX * previewScale
+        let previewOffsetY = clampedOffsetY * previewScale
+        let previewScaledSize = CGSize(
+            width: scaledSize.width * previewScale,
+            height: scaledSize.height * previewScale
+        )
+
+        Image(nsImage: nsImage)
+            .resizable()
+            .frame(width: previewScaledSize.width, height: previewScaledSize.height)
+            .rotationEffect(.degrees(Double(transform.rotation)))
+            .offset(x: previewOffsetX, y: previewOffsetY)
+            .frame(width: previewCanvasSize.width, height: previewCanvasSize.height)
+            .clipped()
+            .contentShape(Rectangle())
+            .gesture(
+                canDrag ? DragGesture()
+                    .onChanged { value in
+                        if !isDragging {
+                            isDragging = true
+                            dragBaseOffset = CGPoint(x: transform.offsetX, y: transform.offsetY)
+                        }
+                        // Live update with bounds clamping
+                        let rawX = dragBaseOffset.x + value.translation.width / previewScale
+                        let rawY = dragBaseOffset.y + value.translation.height / previewScale
+                        appState.updateSelectedFrameOffset(x: rawX, y: rawY)
+                    }
+                    .onEnded { _ in
+                        isDragging = false
+                    } : nil
+            )
+            .onHover { hovering in
+                if canDrag {
+                    if hovering {
+                        NSCursor.openHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
+            }
     }
 
     /// Calculate the canvas frame size that fits within available space

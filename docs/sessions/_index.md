@@ -1,7 +1,8 @@
 # Session Index
 
 ## 2026
-- [2026-01-31](2026-01-31.md) - Canvas-aware preview, HIG improvements, keyboard shortcuts
+- [2026-02-01](2026-02-01.md) - Phase 11 planning: Undo/Redo, Export Dialog, Per-Frame Timing
+- [2026-01-31](2026-01-31.md) - Canvas-aware preview, HIG improvements, WebP export, aspect ratio lock, Phase 11 transforms research
 - [2026-01-30](2026-01-30.md) - Phases 1-6 complete, planned resize enhancement (Fill/Fit + presets)
 
 ## 2025 (Pre-Directions)

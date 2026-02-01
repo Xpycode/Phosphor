@@ -80,6 +80,11 @@ struct GIFExporter {
                     throw ExportError.failedToCreateImage
                 }
 
+                if !item.transform.isIdentity {
+                    let canvasSize = resizeInstruction?.targetSize ?? nsImage.size
+                    nsImage = nsImage.applying(transform: item.transform, canvasSize: canvasSize)
+                }
+
                 if let resizeInstruction = resizeInstruction {
                     nsImage = nsImage.resized(using: resizeInstruction)
                 }

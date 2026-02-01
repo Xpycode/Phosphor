@@ -10,6 +10,7 @@ import SwiftUI
 struct SettingsSidebar: View {
     @ObservedObject var appState: AppState
     @ObservedObject private var exportSettings: ExportSettings
+    @State private var showExportSheet = false
 
     init(appState: AppState) {
         self.appState = appState
@@ -20,19 +21,16 @@ struct SettingsSidebar: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
-                    // Format Selection
-                    FormatSelectionSection(settings: appState.exportSettings)
+                    // Transform (per-frame, only when selected)
+                    TransformSection(appState: appState)
+
+                    // Frame Timing (per-frame, only when selected)
+                    FrameTimingSection(appState: appState)
 
                     // Timing (FPS, Loop Count)
                     TimingSection(settings: appState.exportSettings)
 
-                    // Quality (GIF only)
-                    QualitySection(settings: appState.exportSettings)
-
-                    // Color Depth (GIF only)
-                    ColorDepthSection(settings: appState.exportSettings)
-
-                    // Resize Options
+                    // Canvas Options
                     ResizeSection(settings: appState.exportSettings)
 
                     Spacer(minLength: 20)
@@ -59,57 +57,34 @@ struct SettingsSidebar: View {
                     }
                 }
 
-                if appState.isExporting {
-                    // Progress indicator during export
-                    VStack(spacing: 4) {
-                        ProgressView(value: appState.exportProgress)
-                            .progressViewStyle(.linear)
-
-                        Text("Exporting... \(Int(appState.exportProgress * 100))%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                } else {
-                    // Export button
-                    Button(action: {
-                        appState.performExport()
-                    }) {
-                        Text("Export \(exportSettings.format.rawValue)")
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(appState.unmutedFrames.isEmpty)
+                // Export button opens sheet
+                Button(action: {
+                    showExportSheet = true
+                }) {
+                    Text("Export...")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
                 }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(appState.unmutedFrames.isEmpty)
             }
             .padding()
         }
         .frame(minWidth: 280, idealWidth: 300, maxWidth: 350)
         .background(Color(nsColor: .controlBackgroundColor))
-        // Success alert
-        .alert("Export Complete", isPresented: $appState.showExportSuccess) {
-            Button("Show in Finder") {
-                if let url = appState.lastExportURL {
-                    NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: url.deletingLastPathComponent().path)
-                }
-            }
-            Button("OK", role: .cancel) {}
-        } message: {
-            if let url = appState.lastExportURL {
-                Text("Saved to \(url.lastPathComponent)")
-            }
+        // Export sheet
+        .sheet(isPresented: $showExportSheet) {
+            ExportSheet(appState: appState, isPresented: $showExportSheet)
         }
-        // Error alert
-        .alert("Export Failed", isPresented: .init(
-            get: { appState.exportError != nil },
-            set: { if !$0 { appState.exportError = nil } }
-        )) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            if let error = appState.exportError {
-                Text(error.localizedDescription)
+        // Apply transform to all confirmation
+        .alert("Apply Transform to All Frames?", isPresented: $appState.showApplyTransformToAllConfirmation) {
+            Button("Apply to All", role: .destructive) {
+                appState.applyTransformToAllFrames()
             }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will apply the current frame's transform settings to all \(appState.frames.count) frames.")
         }
     }
 }

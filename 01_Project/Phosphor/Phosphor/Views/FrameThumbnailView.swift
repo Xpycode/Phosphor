@@ -64,6 +64,27 @@ struct FrameThumbnailView: View {
                     .frame(width: thumbnailWidth, height: thumbnailHeight)
                 }
 
+                // Transform badge
+                if !imageItem.transform.isIdentity {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            ZStack {
+                                Circle()
+                                    .fill(Color.blue)
+                                    .frame(width: 16, height: 16)
+
+                                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                    .font(.system(size: 8))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(4)
+                        }
+                        Spacer()
+                    }
+                    .frame(width: thumbnailWidth, height: thumbnailHeight)
+                }
+
                 // Hover action buttons
                 if isHovered {
                     HStack(spacing: 4) {
