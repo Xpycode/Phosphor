@@ -15,6 +15,8 @@ import AppKit
 class AppState: ObservableObject {
     // MARK: - Undo/Redo
     let undoManager = PhosphorUndoManager()
+    private var undoManagerSubscription: AnyCancellable?
+
     @Published var isImporting: Bool = false
 
     // MARK: - Frame Data
@@ -130,7 +132,11 @@ class AppState: ObservableObject {
 
     // MARK: - Initialization
 
-    init() {}
+    init() {
+        undoManagerSubscription = undoManager.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+    }
 
     // MARK: - Per-Frame Timing
 
@@ -527,9 +533,8 @@ class AppState: ObservableObject {
         guard let index = selectedFrameIndex else { return }
         let transform = frames[index].transform
 
-        for i in frames.indices {
-            frames[i].transform = transform
-        }
+        let command = ApplyTransformToAllCommand(newTransform: transform, frames: frames)
+        try? undoManager.perform(command, on: self)
     }
 
     /// Apply anchor preset to selected frame

@@ -179,13 +179,6 @@ extension NSImage {
 
     func resized(using instruction: ResizeInstruction) -> NSImage {
         switch instruction {
-        case let .scale(percent):
-            let factor = max(percent, 1) / 100.0
-            let targetSize = CGSize(
-                width: max(size.width * factor, 1),
-                height: max(size.height * factor, 1)
-            )
-            return resized(to: targetSize, preservingAspectRatio: false)
         case let .fill(targetSize):
             return resizedToFill(targetSize: targetSize)
         case let .fit(targetSize, backgroundColor):

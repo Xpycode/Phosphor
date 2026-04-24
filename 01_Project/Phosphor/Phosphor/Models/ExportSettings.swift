@@ -72,7 +72,6 @@ enum ScaleMode: String, CaseIterable, Identifiable {
 }
 
 enum ResizeInstruction {
-    case scale(percent: Double)
     case fill(size: CGSize)
     case fit(size: CGSize, backgroundColor: NSColor)
 }
@@ -80,8 +79,6 @@ enum ResizeInstruction {
 extension ResizeInstruction {
     var targetSize: CGSize {
         switch self {
-        case .scale:
-            fatalError("Scale mode does not have a fixed target size")
         case let .fill(size):
             return size
         case let .fit(size, _):

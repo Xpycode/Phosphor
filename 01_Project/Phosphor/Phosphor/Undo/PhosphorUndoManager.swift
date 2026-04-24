@@ -14,21 +14,10 @@ class PhosphorUndoManager: ObservableObject {
 
     private let maxStackSize = 50
 
-    var canUndo: Bool {
-        !undoStack.isEmpty
-    }
-
-    var canRedo: Bool {
-        !redoStack.isEmpty
-    }
-
-    var currentUndoActionName: String {
-        undoStack.last?.actionName ?? ""
-    }
-
-    var currentRedoActionName: String {
-        redoStack.last?.actionName ?? ""
-    }
+    @Published private(set) var canUndo: Bool = false
+    @Published private(set) var canRedo: Bool = false
+    @Published private(set) var currentUndoActionName: String = ""
+    @Published private(set) var currentRedoActionName: String = ""
 
     func perform(_ command: Command, on appState: AppState) throws {
         try command.execute(on: appState)
@@ -39,6 +28,8 @@ class PhosphorUndoManager: ObservableObject {
         if undoStack.count > maxStackSize {
             undoStack.removeFirst()
         }
+
+        refreshState()
     }
 
     func undo(on appState: AppState) throws {
@@ -50,6 +41,8 @@ class PhosphorUndoManager: ObservableObject {
         if redoStack.count > maxStackSize {
             redoStack.removeFirst()
         }
+
+        refreshState()
     }
 
     func redo(on appState: AppState) throws {
@@ -61,5 +54,14 @@ class PhosphorUndoManager: ObservableObject {
         if undoStack.count > maxStackSize {
             undoStack.removeFirst()
         }
+
+        refreshState()
+    }
+
+    private func refreshState() {
+        canUndo = !undoStack.isEmpty
+        canRedo = !redoStack.isEmpty
+        currentUndoActionName = undoStack.last?.actionName ?? ""
+        currentRedoActionName = redoStack.last?.actionName ?? ""
     }
 }

@@ -24,6 +24,7 @@
 		2387FB5A2F2EEA8F0006EDBC /* DeleteFrameCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2387FB4B2F2EEA8F0006EDBC /* DeleteFrameCommand.swift */; };
 		2387FB5B2F2EEA8F0006EDBC /* PhosphorUndoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2387FB532F2EEA8F0006EDBC /* PhosphorUndoManager.swift */; };
 		2387FB5C2F2EEA8F0006EDBC /* ImportFramesCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2387FB4C2F2EEA8F0006EDBC /* ImportFramesCommand.swift */; };
+		APPLYTRANS00000000000001 /* ApplyTransformToAllCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = APPLYTRANS00000000000002 /* ApplyTransformToAllCommand.swift */; };
 		2387FB5E2F2EEAA70006EDBC /* FrameTimingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2387FB5D2F2EEAA70006EDBC /* FrameTimingSection.swift */; };
 		2387FB602F2EEF460006EDBC /* ExportState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2387FB5F2F2EEF460006EDBC /* ExportState.swift */; };
 		2387FB672F2EEF630006EDBC /* ExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2387FB652F2EEF630006EDBC /* ExportSheet.swift */; };
@@ -64,6 +65,7 @@
 		2387FB4D2F2EEA8F0006EDBC /* ReorderFramesCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReorderFramesCommand.swift; sourceTree = "<group>"; };
 		2387FB4E2F2EEA8F0006EDBC /* ToggleMuteCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleMuteCommand.swift; sourceTree = "<group>"; };
 		2387FB4F2F2EEA8F0006EDBC /* TransformCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransformCommand.swift; sourceTree = "<group>"; };
+		APPLYTRANS00000000000002 /* ApplyTransformToAllCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyTransformToAllCommand.swift; sourceTree = "<group>"; };
 		2387FB512F2EEA8F0006EDBC /* Command.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Command.swift; sourceTree = "<group>"; };
 		2387FB522F2EEA8F0006EDBC /* CommandError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandError.swift; sourceTree = "<group>"; };
 		2387FB532F2EEA8F0006EDBC /* PhosphorUndoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhosphorUndoManager.swift; sourceTree = "<group>"; };
@@ -106,6 +108,7 @@
 		2387FB502F2EEA8F0006EDBC /* Commands */ = {
 			isa = PBXGroup;
 			children = (
+				APPLYTRANS00000000000002 /* ApplyTransformToAllCommand.swift */,
 				2387FB4B2F2EEA8F0006EDBC /* DeleteFrameCommand.swift */,
 				2387FB4C2F2EEA8F0006EDBC /* ImportFramesCommand.swift */,
 				2387FB4D2F2EEA8F0006EDBC /* ReorderFramesCommand.swift */,
@@ -314,6 +317,7 @@
 				2387FB5A2F2EEA8F0006EDBC /* DeleteFrameCommand.swift in Sources */,
 				2387FB5B2F2EEA8F0006EDBC /* PhosphorUndoManager.swift in Sources */,
 				2387FB5C2F2EEA8F0006EDBC /* ImportFramesCommand.swift in Sources */,
+				APPLYTRANS00000000000001 /* ApplyTransformToAllCommand.swift in Sources */,
 				1000000000000003 /* ImageItem.swift in Sources */,
 				1000000000000004 /* ExportSettings.swift in Sources */,
 				1000000000000009 /* GIFExporter.swift in Sources */,
